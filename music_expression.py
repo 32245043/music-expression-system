@@ -39,35 +39,37 @@ class MusicProcessorApp:
         self.selected_mido_track_index = -1
 
         # 発想標語と対応するCC2値・onset(速度)のプリセットを
-        # フォーマット: { "発想標語": {"cc2_value": 値, "onset_ms": 値_ms} }
-        # cc2_value は CC2 の値に直接加算される値（0-127の範囲）
+        # フォーマット: { "発想標語": {"base_cc2": 値, "peak_cc2": 値, "onset_ms": 値_ms} }
+        # base_cc2 は CC2 の値に直接加算される値（0-127の範囲）
+        # peak_cc2 は 頂点で加算される値
         # onset_ms は1拍あたりに加算/減算するミリ秒数 (正:遅く, 負:速く)
         self.tempo_expressions = {
-            "なし": {"cc2_value": 0, "onset_ms": 0},
-            "Cantabile": {"cc2_value": 10, "onset_ms": -20}, # やや速く
-            "Dolce": {"cc2_value": -20, "onset_ms": -10},    # 少し速く
-            "Maestoso": {"cc2_value": 25, "onset_ms": 40},    # かなり遅く
-            "Appassionato": {"cc2_value": 30, "onset_ms": -30}, # かなり速く
-            "Con brio": {"cc2_value": 20, "onset_ms": -25},   # 速く
-            "Leggiero": {"cc2_value": -15, "onset_ms": -15},  # 少し速く
-            "Tranquillo": {"cc2_value": -10, "onset_ms": 10}, # 少し遅く
-            "Risoluto": {"cc2_value": 20, "onset_ms": 0},     # テンポ変更なし
-            "Sostenuto": {"cc2_value": 15, "onset_ms": 15},   # やや遅く
-            "Marcato": {"cc2_value": 25, "onset_ms": 5},      # 少し遅く
+            "なし": {"base_cc2": 0, "peak_cc2": 0, "onset_ms": 0},
+            "Cantabile": {"base_cc2": 10, "peak_cc2": 20, "onset_ms": 30}, 
+            "Dolce": {"base_cc2": -20, "peak_cc2": -5, "onset_ms": 20},    
+            "Maestoso": {"base_cc2": 10, "peak_cc2": 40, "onset_ms": 40},    
+            "Appassionato": {"base_cc2": 10, "peak_cc2": 35, "onset_ms": -10}, 
+            "Con brio": {"base_cc2": 10, "peak_cc2": 25, "onset_ms": -30},   
+            "Leggiero": {"base_cc2": -10, "peak_cc2": 5, "onset_ms": -10},  
+            "Tranquillo": {"base_cc2": -20, "peak_cc2": -10, "onset_ms": 0}, 
+            "Risoluto": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10},     
+            "Sostenuto": {"base_cc2": 0, "peak_cc2": 10, "onset_ms": 0},   
+            "Marcato": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10},      
         }
 
         # 形容詞と対応するCC2値・onset(速度)のプリセット
-        # フォーマット: { "形容詞": {"cc2_value": 値, "onset_ms": 値_ms} }
-        # cc2_value は CC2 の値に直接加算される値（0-127の範囲）
+        # フォーマット: { "形容詞": {"base_cc2": 値, "peak_cc2": 値, "onset_ms": 値_ms} }
+        # base_cc2 は CC2 の値に直接加算される値（0-127の範囲）
+        # peak_cc2 は 頂点で加算される値
         # onset_ms は1拍あたりに加算/減算するミリ秒数 (正:遅く, 負:速く)
         self.adjective_expressions = {
-            "なし": {"cc2_value": 0, "onset_ms": 0},
-            "明るい": {"cc2_value": 5, "onset_ms": -5},
-            "華やか": {"cc2_value": 10, "onset_ms": -10},
-            "壮大": {"cc2_value": 15, "onset_ms": 15},
-            "暗い": {"cc2_value": -5, "onset_ms": 5},
-            "穏やか": {"cc2_value": -2, "onset_ms": 2},
-            "激しい": {"cc2_value": 12, "onset_ms": -12},
+            "なし": {"base_cc2": 0, "peak_cc2": 0, "onset_ms": 0},
+            "明るい": {"base_cc2": 5, "peak_cc2": 20, "onset_ms": -5},  # ベース+5, 頂点さらに+20 (合計+25)
+            "華やか": {"base_cc2": 10, "peak_cc2": 28, "onset_ms": -10}, # ベース+10, 頂点さらに+28 (合計+38)
+            "壮大": {"base_cc2": 15, "peak_cc2": 32, "onset_ms": 15},   # ベース+15, 頂点さらに+32 (合計+47)
+            "暗い": {"base_cc2": -5, "peak_cc2": 8, "onset_ms": 5},    # ベース-5, 頂点さらに+8 (合計+3) ※ここでベースからの差は13 (abs(8 - (-5)) = 13)
+            "穏やか": {"base_cc2": -2, "peak_cc2": 12, "onset_ms": 2},   # ベース-2, 頂点さらに+12 (合計+10) ※ここでベースからの差は14 (abs(12 - (-2)) = 14)
+            "激しい": {"base_cc2": 12, "peak_cc2": 30, "onset_ms": -12}, # ベース+12, 頂点さらに+30 (合計+42)
         }
 
         self.create_widgets()
@@ -156,7 +158,7 @@ class MusicProcessorApp:
         ttk.Label(phrase_setting_frame, text="発想標語プリセット:").grid(row=6, column=0, sticky="w", pady=2)
         self.tempo_preset_var = tk.StringVar(self.master)
         # 初期値：辞書の1番目の発想標語 (ここでは「なし」が最初になるように変更)
-        initial_tempo_preset = "なし" # 明示的に「なし」に設定
+        initial_tempo_preset = "なし" 
         self.tempo_preset_var.set(initial_tempo_preset)
         self.tempo_preset_menu = ttk.OptionMenu(phrase_setting_frame, self.tempo_preset_var,
                                                  initial_tempo_preset,
@@ -190,13 +192,11 @@ class MusicProcessorApp:
 
     def on_tempo_preset_selected(self, *args):
         # 発想標語が選択されたら、形容詞プリセットを「なし」にリセット
-        # 無限ループを防ぐため、既に「なし」の場合は何もしない
         if self.adjective_preset_var.get() != "なし":
             self.adjective_preset_var.set("なし")
 
     def on_adjective_preset_selected(self, *args):
         # 形容詞が「なし」以外の値に選択されたら、発想標語プリセットを「なし」にリセット
-        # 無限ループを防ぐため、既に「なし」の場合は何もしない
         current_adjective_selection = self.adjective_preset_var.get()
         if current_adjective_selection != "なし" and self.tempo_preset_var.get() != "なし": # ここを修正
             self.tempo_preset_var.set("なし") # 「なし」に設定
@@ -427,7 +427,7 @@ class MusicProcessorApp:
 
     def interpolate_cc2_with_even_ticks(self, track, start_tick, end_tick, end_tick_max, peak_tick, start_expression, peak_expression, end_expression):
         # 指定されたTick範囲と頂点のTickに基づいてCC2値を補間する
-        # 範囲内の既存のCC2イベントを削除し、新しいものを挿入。
+        # 範囲内の既存のCC2イベントを削除し、新しいものを挿入
 
         events = []
         abs_time = 0
@@ -623,7 +623,6 @@ class MusicProcessorApp:
         midi_file_obj.save(output_file_path)
         print(f"MIDIファイルを {output_file_path} に保存しました:")
 
-    # --- ボタンコールバック ---
     def apply_changes(self):
         # フレーズ設定に基づいてCC2補間と発音時刻調整を適用
         if not self.mido_midi_file or self.selected_mido_track_index == -1:
@@ -654,8 +653,9 @@ class MusicProcessorApp:
                 messagebox.showerror("エラー", "無効な形容詞プリセットが選択されました。")
                 return
 
-            # 合計のCC2値とOnset時間
-            combined_cc2_value_change = tempo_preset_data["cc2_value"] + adjective_preset_data["cc2_value"]
+            # 合計のCC2ベース値変更量と頂点CC2値変更量、Onset時間
+            combined_base_cc2 = tempo_preset_data["base_cc2"] + adjective_preset_data["base_cc2"]
+            combined_peak_cc2 = tempo_preset_data["peak_cc2"] + adjective_preset_data["peak_cc2"]
             combined_onset_ms_change = tempo_preset_data["onset_ms"] + adjective_preset_data["onset_ms"]
 
             time_signature = self.get_time_signature(self.mido_midi_file)
@@ -680,18 +680,14 @@ class MusicProcessorApp:
             original_expression = self.get_base_cc2_value(selected_track_for_velocity_cc2, start_tick, end_tick_max)
 
             # 目標のCC2値を計算
-            start_expression = max(0, min(127, int(original_expression + combined_cc2_value_change)))
-            end_expression = max(0, min(127, int(original_expression + combined_cc2_value_change)))
-            peak_expression = max(0, min(127, int(original_expression + combined_cc2_value_change + 10))) 
+            # 開始と終了のCC2値は、元のCC2値にcombined_base_cc2を加算
+            start_expression = max(0, min(127, int(original_expression + combined_base_cc2)))
+            end_expression = max(0, min(127, int(original_expression + combined_base_cc2)))
 
-            # 強制的にピークが開始・終了よりも高くなるように調整
-            if peak_expression <= start_expression:
-                peak_expression = min(127, start_expression + 10)
-            if peak_expression <= end_expression:
-                peak_expression = min(127, end_expression + 10)
-
-            # --- 変更点ここから ---
-            # 選択されたトラックのみにCC2とVelocityの調整を適用
+            # 頂点のCC2値は、元のCC2値にcombined_peak_cc2を加算
+            peak_expression = max(0, min(127, int(original_expression + combined_peak_cc2)))
+            
+            # 選択されたパートのみにCC2とVelocityの調整を適用
             self.interpolate_cc2_with_even_ticks(selected_track_for_velocity_cc2, start_tick, end_tick, end_tick_max, peak_tick, start_expression, peak_expression, end_expression)
             self.adjust_velocity_based_on_expression(selected_track_for_velocity_cc2)
 
@@ -699,7 +695,6 @@ class MusicProcessorApp:
             for i, track in enumerate(self.mido_midi_file.tracks):
                 # CC2とVelocityの調整を行ったトラック以外にもOnset調整を適用
                 self.adjust_onset_times(track, start_tick, end_tick_max, combined_onset_ms_change)
-            # --- 変更点ここまで ---
 
             messagebox.showinfo("完了",
                                 f"指定範囲にExpression(CC2)補間と発音時刻調整を適用しました。\n"
