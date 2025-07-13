@@ -13,7 +13,7 @@ output_png = "output(png)"
 output_xml = "output(xml)"
 output_ly = "output(ly)"
 output_midi = "output(midi)"
-output_single_part_midi = "output(single_part_midi)" # 新しく追加
+output_single_part_midi = "output(single_part_midi)" 
 
 # Python実行ファイルのパス
 python_exe = ""
