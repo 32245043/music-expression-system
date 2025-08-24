@@ -16,7 +16,7 @@
 #### 事前準備
 【MuseScore】   
 💡MuseScoreのプラグインを有効にする  
-　・エクスプローラー→"MuseScore(3 or 4)/Plugins"内に➅ PharaseSelector.qmlを置く   
+　・エクスプローラー→"MuseScore(3 or 4)\Plugins"内に➅ PharaseSelector.qmlを置く   
 　＜MuseScore 3.x＞  
 　・プラグイン＞プラグインマネージャー＞PhraseSelectorにチェックを入れてOkを押す  
 　＜MuseScore 4.x＞   
