@@ -100,7 +100,7 @@ python -m venv .venv
 
 ### ③ 必要ライブラリのインストール
 ```bash
-pip install flask music21 mido pyFluidSynth
+pip install -r requirements.txt
 ```
 
 ### ④ FluidSynth の導入
