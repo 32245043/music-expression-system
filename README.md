@@ -123,7 +123,7 @@ pip install flask music21 mido pyFluidSynth
    flask run
    ```
 2. ブラウザでアクセス  
-   ```
+   ```bash
    http://127.0.0.1:5000
    ```
    表示されるURLをクリックしてください
