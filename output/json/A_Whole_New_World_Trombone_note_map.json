@@ -1,0 +1,1714 @@
+[
+  {
+    "index": 0,
+    "measure": 1,
+    "offset_beats": 0.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 0.0,
+    "tick": 0
+  },
+  {
+    "index": 1,
+    "measure": 2,
+    "offset_beats": 4.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 2000.0,
+    "tick": 1920
+  },
+  {
+    "index": 2,
+    "measure": 3,
+    "offset_beats": 8.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 4000.0,
+    "tick": 3840
+  },
+  {
+    "index": 3,
+    "measure": 4,
+    "offset_beats": 12.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 6000.0,
+    "tick": 5760
+  },
+  {
+    "index": 4,
+    "measure": 5,
+    "offset_beats": 16.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 8000.0,
+    "tick": 7680
+  },
+  {
+    "index": 5,
+    "measure": 5,
+    "offset_beats": 17.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 8500.0,
+    "tick": 8160
+  },
+  {
+    "index": 6,
+    "measure": 5,
+    "offset_beats": 17.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 8750.0,
+    "tick": 8400
+  },
+  {
+    "index": 7,
+    "measure": 5,
+    "offset_beats": 18.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 9000.0,
+    "tick": 8640
+  },
+  {
+    "index": 8,
+    "measure": 5,
+    "offset_beats": 18.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 9250.0,
+    "tick": 8880
+  },
+  {
+    "index": 9,
+    "measure": 5,
+    "offset_beats": 19.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 9500.0,
+    "tick": 9120
+  },
+  {
+    "index": 10,
+    "measure": 6,
+    "offset_beats": 20.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 10000.0,
+    "tick": 9600
+  },
+  {
+    "index": 11,
+    "measure": 7,
+    "offset_beats": 24.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 12000.0,
+    "tick": 11520
+  },
+  {
+    "index": 12,
+    "measure": 7,
+    "offset_beats": 25.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 12500.0,
+    "tick": 12000
+  },
+  {
+    "index": 13,
+    "measure": 7,
+    "offset_beats": 25.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 12750.0,
+    "tick": 12240
+  },
+  {
+    "index": 14,
+    "measure": 7,
+    "offset_beats": 26.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 13000.0,
+    "tick": 12480
+  },
+  {
+    "index": 15,
+    "measure": 7,
+    "offset_beats": 26.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 13250.0,
+    "tick": 12720
+  },
+  {
+    "index": 16,
+    "measure": 7,
+    "offset_beats": 27.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 13500.0,
+    "tick": 12960
+  },
+  {
+    "index": 17,
+    "measure": 8,
+    "offset_beats": 28.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 14000.0,
+    "tick": 13440
+  },
+  {
+    "index": 18,
+    "measure": 8,
+    "offset_beats": 29.5,
+    "duration_beats": 0.25,
+    "seconds_ms": 14750.0,
+    "tick": 14160
+  },
+  {
+    "index": 19,
+    "measure": 8,
+    "offset_beats": 29.75,
+    "duration_beats": 0.25,
+    "seconds_ms": 14875.0,
+    "tick": 14280
+  },
+  {
+    "index": 20,
+    "measure": 8,
+    "offset_beats": 30.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 15000.0,
+    "tick": 14400
+  },
+  {
+    "index": 21,
+    "measure": 9,
+    "offset_beats": 32.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 16000.0,
+    "tick": 15360
+  },
+  {
+    "index": 22,
+    "measure": 9,
+    "offset_beats": 33.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 16500.0,
+    "tick": 15840
+  },
+  {
+    "index": 23,
+    "measure": 9,
+    "offset_beats": 33.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 16750.0,
+    "tick": 16080
+  },
+  {
+    "index": 24,
+    "measure": 9,
+    "offset_beats": 34.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 17000.0,
+    "tick": 16320
+  },
+  {
+    "index": 25,
+    "measure": 9,
+    "offset_beats": 34.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 17250.0,
+    "tick": 16560
+  },
+  {
+    "index": 26,
+    "measure": 9,
+    "offset_beats": 35.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 17750.0,
+    "tick": 17040
+  },
+  {
+    "index": 27,
+    "measure": 10,
+    "offset_beats": 36.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 18000.0,
+    "tick": 17280
+  },
+  {
+    "index": 28,
+    "measure": 10,
+    "offset_beats": 37.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 18500.0,
+    "tick": 17760
+  },
+  {
+    "index": 29,
+    "measure": 10,
+    "offset_beats": 38.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 19000.0,
+    "tick": 18240
+  },
+  {
+    "index": 30,
+    "measure": 10,
+    "offset_beats": 39.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 19500.0,
+    "tick": 18720
+  },
+  {
+    "index": 31,
+    "measure": 11,
+    "offset_beats": 40.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 20000.0,
+    "tick": 19200
+  },
+  {
+    "index": 32,
+    "measure": 11,
+    "offset_beats": 40.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 20250.0,
+    "tick": 19440
+  },
+  {
+    "index": 33,
+    "measure": 11,
+    "offset_beats": 41.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 20750.0,
+    "tick": 19920
+  },
+  {
+    "index": 34,
+    "measure": 11,
+    "offset_beats": 42.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 21000.0,
+    "tick": 20160
+  },
+  {
+    "index": 35,
+    "measure": 11,
+    "offset_beats": 42.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 21250.0,
+    "tick": 20400
+  },
+  {
+    "index": 36,
+    "measure": 11,
+    "offset_beats": 43.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 21750.0,
+    "tick": 20880
+  },
+  {
+    "index": 37,
+    "measure": 12,
+    "offset_beats": 44.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 22000.0,
+    "tick": 21120
+  },
+  {
+    "index": 38,
+    "measure": 13,
+    "offset_beats": 48.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 24000.0,
+    "tick": 23040
+  },
+  {
+    "index": 39,
+    "measure": 14,
+    "offset_beats": 52.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 26000.0,
+    "tick": 24960
+  },
+  {
+    "index": 40,
+    "measure": 15,
+    "offset_beats": 56.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 28000.0,
+    "tick": 26880
+  },
+  {
+    "index": 41,
+    "measure": 16,
+    "offset_beats": 60.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 30000.0,
+    "tick": 28800
+  },
+  {
+    "index": 42,
+    "measure": 16,
+    "offset_beats": 62.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 31000.0,
+    "tick": 29760
+  },
+  {
+    "index": 43,
+    "measure": 17,
+    "offset_beats": 64.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 32000.0,
+    "tick": 30720
+  },
+  {
+    "index": 44,
+    "measure": 17,
+    "offset_beats": 65.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 32750.0,
+    "tick": 31440
+  },
+  {
+    "index": 45,
+    "measure": 17,
+    "offset_beats": 66.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 33000.0,
+    "tick": 31680
+  },
+  {
+    "index": 46,
+    "measure": 17,
+    "offset_beats": 67.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 33500.0,
+    "tick": 32160
+  },
+  {
+    "index": 47,
+    "measure": 18,
+    "offset_beats": 68.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 34000.0,
+    "tick": 32640
+  },
+  {
+    "index": 48,
+    "measure": 18,
+    "offset_beats": 69.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 34750.0,
+    "tick": 33360
+  },
+  {
+    "index": 49,
+    "measure": 18,
+    "offset_beats": 70.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 35000.0,
+    "tick": 33600
+  },
+  {
+    "index": 50,
+    "measure": 19,
+    "offset_beats": 72.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 36000.0,
+    "tick": 34560
+  },
+  {
+    "index": 51,
+    "measure": 19,
+    "offset_beats": 74.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 37000.0,
+    "tick": 35520
+  },
+  {
+    "index": 52,
+    "measure": 20,
+    "offset_beats": 76.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 38000.0,
+    "tick": 36480
+  },
+  {
+    "index": 53,
+    "measure": 20,
+    "offset_beats": 77.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 38750.0,
+    "tick": 37200
+  },
+  {
+    "index": 54,
+    "measure": 20,
+    "offset_beats": 78.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 39000.0,
+    "tick": 37440
+  },
+  {
+    "index": 55,
+    "measure": 20,
+    "offset_beats": 79.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 39500.0,
+    "tick": 37920
+  },
+  {
+    "index": 56,
+    "measure": 21,
+    "offset_beats": 80.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 40000.0,
+    "tick": 38400
+  },
+  {
+    "index": 57,
+    "measure": 22,
+    "offset_beats": 84.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 42000.0,
+    "tick": 40320
+  },
+  {
+    "index": 58,
+    "measure": 22,
+    "offset_beats": 85.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 42750.0,
+    "tick": 41040
+  },
+  {
+    "index": 59,
+    "measure": 22,
+    "offset_beats": 86.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 43000.0,
+    "tick": 41280
+  },
+  {
+    "index": 60,
+    "measure": 22,
+    "offset_beats": 87.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 43500.0,
+    "tick": 41760
+  },
+  {
+    "index": 61,
+    "measure": 23,
+    "offset_beats": 88.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 44000.0,
+    "tick": 42240
+  },
+  {
+    "index": 62,
+    "measure": 23,
+    "offset_beats": 89.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 44500.0,
+    "tick": 42720
+  },
+  {
+    "index": 63,
+    "measure": 23,
+    "offset_beats": 89.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 44750.0,
+    "tick": 42960
+  },
+  {
+    "index": 64,
+    "measure": 23,
+    "offset_beats": 90.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 45000.0,
+    "tick": 43200
+  },
+  {
+    "index": 65,
+    "measure": 23,
+    "offset_beats": 90.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 45250.0,
+    "tick": 43440
+  },
+  {
+    "index": 66,
+    "measure": 23,
+    "offset_beats": 91.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 45750.0,
+    "tick": 43920
+  },
+  {
+    "index": 67,
+    "measure": 24,
+    "offset_beats": 92.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 46000.0,
+    "tick": 44160
+  },
+  {
+    "index": 68,
+    "measure": 24,
+    "offset_beats": 94.0,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 47000.0,
+    "tick": 45120
+  },
+  {
+    "index": 69,
+    "measure": 24,
+    "offset_beats": 94.66666666666667,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 47333.333,
+    "tick": 45440
+  },
+  {
+    "index": 70,
+    "measure": 24,
+    "offset_beats": 95.33333333333333,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 47666.667,
+    "tick": 45760
+  },
+  {
+    "index": 71,
+    "measure": 25,
+    "offset_beats": 96.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 48000.0,
+    "tick": 46080
+  },
+  {
+    "index": 72,
+    "measure": 25,
+    "offset_beats": 97.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 48500.0,
+    "tick": 46560
+  },
+  {
+    "index": 73,
+    "measure": 25,
+    "offset_beats": 98.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 49000.0,
+    "tick": 47040
+  },
+  {
+    "index": 74,
+    "measure": 25,
+    "offset_beats": 99.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 49500.0,
+    "tick": 47520
+  },
+  {
+    "index": 75,
+    "measure": 26,
+    "offset_beats": 100.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 50000.0,
+    "tick": 48000
+  },
+  {
+    "index": 76,
+    "measure": 26,
+    "offset_beats": 101.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 50500.0,
+    "tick": 48480
+  },
+  {
+    "index": 77,
+    "measure": 26,
+    "offset_beats": 102.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 51000.0,
+    "tick": 48960
+  },
+  {
+    "index": 78,
+    "measure": 26,
+    "offset_beats": 103.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 51500.0,
+    "tick": 49440
+  },
+  {
+    "index": 79,
+    "measure": 27,
+    "offset_beats": 104.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 52000.0,
+    "tick": 49920
+  },
+  {
+    "index": 80,
+    "measure": 27,
+    "offset_beats": 105.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 52750.0,
+    "tick": 50640
+  },
+  {
+    "index": 81,
+    "measure": 27,
+    "offset_beats": 106.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 53000.0,
+    "tick": 50880
+  },
+  {
+    "index": 82,
+    "measure": 27,
+    "offset_beats": 107.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 53750.0,
+    "tick": 51600
+  },
+  {
+    "index": 83,
+    "measure": 28,
+    "offset_beats": 108.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 54000.0,
+    "tick": 51840
+  },
+  {
+    "index": 84,
+    "measure": 28,
+    "offset_beats": 109.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 54750.0,
+    "tick": 52560
+  },
+  {
+    "index": 85,
+    "measure": 28,
+    "offset_beats": 110.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 55000.0,
+    "tick": 52800
+  },
+  {
+    "index": 86,
+    "measure": 28,
+    "offset_beats": 111.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 55500.0,
+    "tick": 53280
+  },
+  {
+    "index": 87,
+    "measure": 29,
+    "offset_beats": 112.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 56000.0,
+    "tick": 53760
+  },
+  {
+    "index": 88,
+    "measure": 30,
+    "offset_beats": 116.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 58000.0,
+    "tick": 55680
+  },
+  {
+    "index": 89,
+    "measure": 30,
+    "offset_beats": 117.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 58750.0,
+    "tick": 56400
+  },
+  {
+    "index": 90,
+    "measure": 30,
+    "offset_beats": 118.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 59000.0,
+    "tick": 56640
+  },
+  {
+    "index": 91,
+    "measure": 30,
+    "offset_beats": 119.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 59500.0,
+    "tick": 57120
+  },
+  {
+    "index": 92,
+    "measure": 31,
+    "offset_beats": 120.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 60000.0,
+    "tick": 57600
+  },
+  {
+    "index": 93,
+    "measure": 31,
+    "offset_beats": 121.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 60500.0,
+    "tick": 58080
+  },
+  {
+    "index": 94,
+    "measure": 31,
+    "offset_beats": 121.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 60750.0,
+    "tick": 58320
+  },
+  {
+    "index": 95,
+    "measure": 31,
+    "offset_beats": 122.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 61000.0,
+    "tick": 58560
+  },
+  {
+    "index": 96,
+    "measure": 31,
+    "offset_beats": 122.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 61250.0,
+    "tick": 58800
+  },
+  {
+    "index": 97,
+    "measure": 31,
+    "offset_beats": 123.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 61750.0,
+    "tick": 59280
+  },
+  {
+    "index": 98,
+    "measure": 32,
+    "offset_beats": 124.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 62000.0,
+    "tick": 59520
+  },
+  {
+    "index": 99,
+    "measure": 32,
+    "offset_beats": 126.0,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 63000.0,
+    "tick": 60480
+  },
+  {
+    "index": 100,
+    "measure": 32,
+    "offset_beats": 126.66666666666667,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 63333.333,
+    "tick": 60800
+  },
+  {
+    "index": 101,
+    "measure": 32,
+    "offset_beats": 127.33333333333333,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 63666.667,
+    "tick": 61120
+  },
+  {
+    "index": 102,
+    "measure": 33,
+    "offset_beats": 128.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 64000.0,
+    "tick": 61440
+  },
+  {
+    "index": 103,
+    "measure": 33,
+    "offset_beats": 129.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 64500.0,
+    "tick": 61920
+  },
+  {
+    "index": 104,
+    "measure": 33,
+    "offset_beats": 130.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 65000.0,
+    "tick": 62400
+  },
+  {
+    "index": 105,
+    "measure": 33,
+    "offset_beats": 131.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 65500.0,
+    "tick": 62880
+  },
+  {
+    "index": 106,
+    "measure": 34,
+    "offset_beats": 132.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 66000.0,
+    "tick": 63360
+  },
+  {
+    "index": 107,
+    "measure": 34,
+    "offset_beats": 133.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 66500.0,
+    "tick": 63840
+  },
+  {
+    "index": 108,
+    "measure": 34,
+    "offset_beats": 134.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 67000.0,
+    "tick": 64320
+  },
+  {
+    "index": 109,
+    "measure": 34,
+    "offset_beats": 135.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 67500.0,
+    "tick": 64800
+  },
+  {
+    "index": 110,
+    "measure": 35,
+    "offset_beats": 136.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 68000.0,
+    "tick": 65280
+  },
+  {
+    "index": 111,
+    "measure": 35,
+    "offset_beats": 137.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 68750.0,
+    "tick": 66000
+  },
+  {
+    "index": 112,
+    "measure": 35,
+    "offset_beats": 138.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 69000.0,
+    "tick": 66240
+  },
+  {
+    "index": 113,
+    "measure": 36,
+    "offset_beats": 140.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 70000.0,
+    "tick": 67200
+  },
+  {
+    "index": 114,
+    "measure": 36,
+    "offset_beats": 141.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 70750.0,
+    "tick": 67920
+  },
+  {
+    "index": 115,
+    "measure": 36,
+    "offset_beats": 142.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 71000.0,
+    "tick": 68160
+  },
+  {
+    "index": 116,
+    "measure": 37,
+    "offset_beats": 144.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 72000.0,
+    "tick": 69120
+  },
+  {
+    "index": 117,
+    "measure": 37,
+    "offset_beats": 144.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 72250.0,
+    "tick": 69360
+  },
+  {
+    "index": 118,
+    "measure": 37,
+    "offset_beats": 145.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 72750.0,
+    "tick": 69840
+  },
+  {
+    "index": 119,
+    "measure": 37,
+    "offset_beats": 146.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 73000.0,
+    "tick": 70080
+  },
+  {
+    "index": 120,
+    "measure": 37,
+    "offset_beats": 146.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 73250.0,
+    "tick": 70320
+  },
+  {
+    "index": 121,
+    "measure": 37,
+    "offset_beats": 147.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 73750.0,
+    "tick": 70800
+  },
+  {
+    "index": 122,
+    "measure": 38,
+    "offset_beats": 148.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 74000.0,
+    "tick": 71040
+  },
+  {
+    "index": 123,
+    "measure": 38,
+    "offset_beats": 148.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 74250.0,
+    "tick": 71280
+  },
+  {
+    "index": 124,
+    "measure": 38,
+    "offset_beats": 149.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 74750.0,
+    "tick": 71760
+  },
+  {
+    "index": 125,
+    "measure": 38,
+    "offset_beats": 150.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 75000.0,
+    "tick": 72000
+  },
+  {
+    "index": 126,
+    "measure": 38,
+    "offset_beats": 150.5,
+    "duration_beats": 1.5,
+    "seconds_ms": 75250.0,
+    "tick": 72240
+  },
+  {
+    "index": 127,
+    "measure": 39,
+    "offset_beats": 152.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 76000.0,
+    "tick": 72960
+  },
+  {
+    "index": 128,
+    "measure": 39,
+    "offset_beats": 153.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 76500.0,
+    "tick": 73440
+  },
+  {
+    "index": 129,
+    "measure": 39,
+    "offset_beats": 153.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 76750.0,
+    "tick": 73680
+  },
+  {
+    "index": 130,
+    "measure": 39,
+    "offset_beats": 154.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 77000.0,
+    "tick": 73920
+  },
+  {
+    "index": 131,
+    "measure": 39,
+    "offset_beats": 154.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 77250.0,
+    "tick": 74160
+  },
+  {
+    "index": 132,
+    "measure": 39,
+    "offset_beats": 155.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 77500.0,
+    "tick": 74400
+  },
+  {
+    "index": 133,
+    "measure": 40,
+    "offset_beats": 156.0,
+    "duration_beats": 3.0,
+    "seconds_ms": 78000.0,
+    "tick": 74880
+  },
+  {
+    "index": 134,
+    "measure": 41,
+    "offset_beats": 160.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 80000.0,
+    "tick": 76800
+  },
+  {
+    "index": 135,
+    "measure": 41,
+    "offset_beats": 161.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 80500.0,
+    "tick": 77280
+  },
+  {
+    "index": 136,
+    "measure": 41,
+    "offset_beats": 161.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 80750.0,
+    "tick": 77520
+  },
+  {
+    "index": 137,
+    "measure": 41,
+    "offset_beats": 162.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 81000.0,
+    "tick": 77760
+  },
+  {
+    "index": 138,
+    "measure": 41,
+    "offset_beats": 162.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 81250.0,
+    "tick": 78000
+  },
+  {
+    "index": 139,
+    "measure": 41,
+    "offset_beats": 163.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 81500.0,
+    "tick": 78240
+  },
+  {
+    "index": 140,
+    "measure": 42,
+    "offset_beats": 164.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 82000.0,
+    "tick": 78720
+  },
+  {
+    "index": 141,
+    "measure": 42,
+    "offset_beats": 165.5,
+    "duration_beats": 0.25,
+    "seconds_ms": 82750.0,
+    "tick": 79440
+  },
+  {
+    "index": 142,
+    "measure": 42,
+    "offset_beats": 165.75,
+    "duration_beats": 0.25,
+    "seconds_ms": 82875.0,
+    "tick": 79560
+  },
+  {
+    "index": 143,
+    "measure": 42,
+    "offset_beats": 166.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 83000.0,
+    "tick": 79680
+  },
+  {
+    "index": 144,
+    "measure": 43,
+    "offset_beats": 168.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 84000.0,
+    "tick": 80640
+  },
+  {
+    "index": 145,
+    "measure": 43,
+    "offset_beats": 170.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 85000.0,
+    "tick": 81600
+  },
+  {
+    "index": 146,
+    "measure": 44,
+    "offset_beats": 172.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 86000.0,
+    "tick": 82560
+  },
+  {
+    "index": 147,
+    "measure": 44,
+    "offset_beats": 174.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 87000.0,
+    "tick": 83520
+  },
+  {
+    "index": 148,
+    "measure": 45,
+    "offset_beats": 176.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 88000.0,
+    "tick": 84480
+  },
+  {
+    "index": 149,
+    "measure": 46,
+    "offset_beats": 180.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 90000.0,
+    "tick": 86400
+  },
+  {
+    "index": 150,
+    "measure": 47,
+    "offset_beats": 185.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 92500.0,
+    "tick": 88800
+  },
+  {
+    "index": 151,
+    "measure": 47,
+    "offset_beats": 185.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 92750.0,
+    "tick": 89040
+  },
+  {
+    "index": 152,
+    "measure": 47,
+    "offset_beats": 186.0,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 93000.0,
+    "tick": 89280
+  },
+  {
+    "index": 153,
+    "measure": 47,
+    "offset_beats": 186.66666666666666,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 93333.333,
+    "tick": 89600
+  },
+  {
+    "index": 154,
+    "measure": 47,
+    "offset_beats": 187.33333333333334,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 93666.667,
+    "tick": 89920
+  },
+  {
+    "index": 155,
+    "measure": 48,
+    "offset_beats": 188.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 94000.0,
+    "tick": 90240
+  },
+  {
+    "index": 156,
+    "measure": 49,
+    "offset_beats": 193.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 96500.0,
+    "tick": 92640
+  },
+  {
+    "index": 157,
+    "measure": 49,
+    "offset_beats": 193.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 96750.0,
+    "tick": 92880
+  },
+  {
+    "index": 158,
+    "measure": 49,
+    "offset_beats": 194.0,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 97000.0,
+    "tick": 93120
+  },
+  {
+    "index": 159,
+    "measure": 49,
+    "offset_beats": 194.66666666666666,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 97333.333,
+    "tick": 93440
+  },
+  {
+    "index": 160,
+    "measure": 49,
+    "offset_beats": 195.33333333333334,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 97666.667,
+    "tick": 93760
+  },
+  {
+    "index": 161,
+    "measure": 50,
+    "offset_beats": 196.0,
+    "duration_beats": 0.6666666666666666,
+    "seconds_ms": 98000.0,
+    "tick": 94080
+  },
+  {
+    "index": 162,
+    "measure": 50,
+    "offset_beats": 196.66666666666666,
+    "duration_beats": 1.3333333333333333,
+    "seconds_ms": 98333.333,
+    "tick": 94400
+  },
+  {
+    "index": 163,
+    "measure": 51,
+    "offset_beats": 200.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 100000.0,
+    "tick": 96000
+  },
+  {
+    "index": 164,
+    "measure": 51,
+    "offset_beats": 202.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 101000.0,
+    "tick": 96960
+  },
+  {
+    "index": 165,
+    "measure": 52,
+    "offset_beats": 204.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 102000.0,
+    "tick": 97920
+  },
+  {
+    "index": 166,
+    "measure": 52,
+    "offset_beats": 206.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 103000.0,
+    "tick": 98880
+  },
+  {
+    "index": 167,
+    "measure": 53,
+    "offset_beats": 208.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 104000.0,
+    "tick": 99840
+  },
+  {
+    "index": 168,
+    "measure": 53,
+    "offset_beats": 210.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 105000.0,
+    "tick": 100800
+  },
+  {
+    "index": 169,
+    "measure": 54,
+    "offset_beats": 212.0,
+    "duration_beats": 1.5,
+    "seconds_ms": 106000.0,
+    "tick": 101760
+  },
+  {
+    "index": 170,
+    "measure": 54,
+    "offset_beats": 213.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 106750.0,
+    "tick": 102480
+  },
+  {
+    "index": 171,
+    "measure": 54,
+    "offset_beats": 214.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 107000.0,
+    "tick": 102720
+  },
+  {
+    "index": 172,
+    "measure": 54,
+    "offset_beats": 215.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 107500.0,
+    "tick": 103200
+  },
+  {
+    "index": 173,
+    "measure": 55,
+    "offset_beats": 216.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 108000.0,
+    "tick": 103680
+  },
+  {
+    "index": 174,
+    "measure": 56,
+    "offset_beats": 220.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 110000.0,
+    "tick": 105600
+  },
+  {
+    "index": 175,
+    "measure": 56,
+    "offset_beats": 221.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 110750.0,
+    "tick": 106320
+  },
+  {
+    "index": 176,
+    "measure": 56,
+    "offset_beats": 222.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 111000.0,
+    "tick": 106560
+  },
+  {
+    "index": 177,
+    "measure": 56,
+    "offset_beats": 223.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 111500.0,
+    "tick": 107040
+  },
+  {
+    "index": 178,
+    "measure": 57,
+    "offset_beats": 224.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 112000.0,
+    "tick": 107520
+  },
+  {
+    "index": 179,
+    "measure": 57,
+    "offset_beats": 225.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 112500.0,
+    "tick": 108000
+  },
+  {
+    "index": 180,
+    "measure": 57,
+    "offset_beats": 225.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 112750.0,
+    "tick": 108240
+  },
+  {
+    "index": 181,
+    "measure": 57,
+    "offset_beats": 226.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 113000.0,
+    "tick": 108480
+  },
+  {
+    "index": 182,
+    "measure": 57,
+    "offset_beats": 226.5,
+    "duration_beats": 1.0,
+    "seconds_ms": 113250.0,
+    "tick": 108720
+  },
+  {
+    "index": 183,
+    "measure": 57,
+    "offset_beats": 227.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 113750.0,
+    "tick": 109200
+  },
+  {
+    "index": 184,
+    "measure": 58,
+    "offset_beats": 228.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 114000.0,
+    "tick": 109440
+  },
+  {
+    "index": 185,
+    "measure": 59,
+    "offset_beats": 232.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 116000.0,
+    "tick": 111360
+  },
+  {
+    "index": 186,
+    "measure": 59,
+    "offset_beats": 234.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 117000.0,
+    "tick": 112320
+  },
+  {
+    "index": 187,
+    "measure": 60,
+    "offset_beats": 236.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 118000.0,
+    "tick": 113280
+  },
+  {
+    "index": 188,
+    "measure": 60,
+    "offset_beats": 238.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 119000.0,
+    "tick": 114240
+  },
+  {
+    "index": 189,
+    "measure": 61,
+    "offset_beats": 240.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 120000.0,
+    "tick": 115200
+  },
+  {
+    "index": 190,
+    "measure": 61,
+    "offset_beats": 242.0,
+    "duration_beats": 2.0,
+    "seconds_ms": 121000.0,
+    "tick": 116160
+  },
+  {
+    "index": 191,
+    "measure": 62,
+    "offset_beats": 244.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 122000.0,
+    "tick": 117120
+  },
+  {
+    "index": 192,
+    "measure": 63,
+    "offset_beats": 248.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 124000.0,
+    "tick": 119040
+  },
+  {
+    "index": 193,
+    "measure": 64,
+    "offset_beats": 252.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 126000.0,
+    "tick": 120960
+  },
+  {
+    "index": 194,
+    "measure": 64,
+    "offset_beats": 253.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 126750.0,
+    "tick": 121680
+  },
+  {
+    "index": 195,
+    "measure": 64,
+    "offset_beats": 254.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 127000.0,
+    "tick": 121920
+  },
+  {
+    "index": 196,
+    "measure": 64,
+    "offset_beats": 255.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 127500.0,
+    "tick": 122400
+  },
+  {
+    "index": 197,
+    "measure": 65,
+    "offset_beats": 256.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 128000.0,
+    "tick": 122880
+  },
+  {
+    "index": 198,
+    "measure": 66,
+    "offset_beats": 261.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 130750.0,
+    "tick": 125520
+  },
+  {
+    "index": 199,
+    "measure": 66,
+    "offset_beats": 262.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 131000.0,
+    "tick": 125760
+  },
+  {
+    "index": 200,
+    "measure": 66,
+    "offset_beats": 263.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 131500.0,
+    "tick": 126240
+  },
+  {
+    "index": 201,
+    "measure": 67,
+    "offset_beats": 264.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 132000.0,
+    "tick": 126720
+  },
+  {
+    "index": 202,
+    "measure": 68,
+    "offset_beats": 268.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 134000.0,
+    "tick": 128640
+  },
+  {
+    "index": 203,
+    "measure": 68,
+    "offset_beats": 269.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 134750.0,
+    "tick": 129360
+  },
+  {
+    "index": 204,
+    "measure": 68,
+    "offset_beats": 270.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 135000.0,
+    "tick": 129600
+  },
+  {
+    "index": 205,
+    "measure": 68,
+    "offset_beats": 271.0,
+    "duration_beats": 0.5,
+    "seconds_ms": 135500.0,
+    "tick": 130080
+  },
+  {
+    "index": 206,
+    "measure": 68,
+    "offset_beats": 271.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 135750.0,
+    "tick": 130320
+  },
+  {
+    "index": 207,
+    "measure": 69,
+    "offset_beats": 272.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 136000.0,
+    "tick": 130560
+  },
+  {
+    "index": 208,
+    "measure": 70,
+    "offset_beats": 276.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 138000.0,
+    "tick": 132480
+  },
+  {
+    "index": 209,
+    "measure": 70,
+    "offset_beats": 277.5,
+    "duration_beats": 0.5,
+    "seconds_ms": 138750.0,
+    "tick": 133200
+  },
+  {
+    "index": 210,
+    "measure": 70,
+    "offset_beats": 278.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 139000.0,
+    "tick": 133440
+  },
+  {
+    "index": 211,
+    "measure": 70,
+    "offset_beats": 279.0,
+    "duration_beats": 1.0,
+    "seconds_ms": 139500.0,
+    "tick": 133920
+  },
+  {
+    "index": 212,
+    "measure": 71,
+    "offset_beats": 280.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 140000.0,
+    "tick": 134400
+  },
+  {
+    "index": 213,
+    "measure": 72,
+    "offset_beats": 284.0,
+    "duration_beats": 4.0,
+    "seconds_ms": 142000.0,
+    "tick": 136320
+  }
+]

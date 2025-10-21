@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>発想標語に対応する演奏見本システム</title>
+    
+    <!-- ============================= -->
+    <!-- CSS -->
+    <!-- ============================= -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- ============================= -->
+    <!-- ✅ abcjsを最初に読み込む -->
+    <!-- ============================= -->
+    <script src="{{ url_for('static', filename='js/abcjs-basic-min.js') }}"></script>
+
+    <!-- ============================= -->
+    <!-- ✅ main.jsを最後に読み込む -->
+    <!-- ============================= -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>発想標語に対応する演奏見本システム</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- ============================================= -->
+            <!-- 左パネル -->
+            <!-- ============================================= -->
+            <div class="panel left-panel">
+                
+                <!-- カード1: ファイル読み込み -->
+                <div class="card">
+                    <h2>1. ファイル読み込み</h2>
+                    <form id="upload-form">
+                        <label for="xml-file">楽譜 (MusicXML):</label>
+                        <input type="file" id="xml-file" name="xml-file" accept=".xml,.musicxml" required>
+                        
+                        <label for="midi-file">演奏データ (MIDI):</label>
+                        <input type="file" id="midi-file" name="midi-file" accept=".mid,.midi" required>
+                        
+                        <button type="submit">読み込み開始</button>
+                    </form>
+                </div>
+
+                <!-- カード2: パート選択 -->
+                <div class="card">
+                    <h2>2. パート選択</h2>
+                    <select id="part-selector" disabled>
+                        <option>先にファイルを読み込んでください</option>
+                    </select>
+                </div>
+
+                <!-- カード3: フレーズ設定 -->
+                <div class="card">
+                    <h2>3. フレーズ設定</h2>
+                    <p>楽譜上のフレーズ<strong>開始 → 終了 → 頂点</strong>となる音符を順番にクリックしてください。</p>
+                    
+                    <div id="phrase-info">
+                        <p>開始: <span id="start-note-info">未選択</span></p>
+                        <p>頂点: <span id="peak-note-info">未選択</span></p>
+                        <p>終了: <span id="end-note-info">未選択</span></p>
+                    </div>
+
+                    <button id="reset-selection-btn">選択リセット</button>
+                </div>
+
+                <!-- カード4: 表現プリセット -->
+                <div class="card">
+                    <h2>4. 表現プリセット</h2>
+                    <label for="tempo-preset">発想標語プリセット:</label>
+                    <select id="tempo-preset">
+                        {% for name, params in presets.tempo_expressions.items() %}
+                        <option value="{{ name }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <br>
+                    <label for="adjective-preset">形容詞プリセット:</label>
+                    <select id="adjective-preset">
+                        {% for name, params in presets.adjective_expressions.items() %}
+                        <option value="{{ name }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- カード5: 適用と再生 -->
+                <div class="card">
+                    <h2>5. 適用と再生</h2>
+                    <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
+                    
+                    <!-- 🎧 聴き比べボタン群 -->
+                    <div id="compare-container" style="margin-top: 15px; display:none;">
+                        <h3>🎧 聴き比べ</h3>
+                        <p style="font-size: 0.9em; color: #555;">加工前後・単一パート／全体を聴き比べできます。</p>
+
+                        <div class="compare-block">
+                            <button onclick="playWAV('original_single')">🎵 単一パート（元）再生</button>
+                            <button onclick="playWAV('processed_single')">🎶 単一パート（加工後）再生</button>
+                        </div>
+
+                        <div class="compare-block">
+                            <button onclick="playWAV('original_full')">🎵 全体（元）再生</button>
+                            <button onclick="playWAV('processed_full')">🎶 全体（加工後）再生</button>
+                        </div>
+
+                        <div style="margin-top: 10px;">
+                            <button onclick="stopWAV()">⏹ 停止</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================= -->
+            <!-- 右パネル: 楽譜表示エリア -->
+            <!-- ============================================= -->
+            <div class="panel right-panel">
+                <div id="status-message">
+                    ここに楽譜が表示されます。左のエリアからファイルを読み込んでください。
+                </div>
+
+                <!-- ✅ ABCJSで描画する領域 -->
+                <div id="score-display"></div>
+
+                <!-- ✅ 状態／エラーメッセージ表示 -->
+                <div id="abc-status" style="margin-top: 10px; color: gray;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flaskから渡されたプリセットをJSで扱えるようにする -->
+    <script>
+        const presetsJsonString = '{{ presets | tojson | safe }}';
+        const PRESETS = JSON.parse(presetsJsonString);
+    </script>
+</body>
+</html>

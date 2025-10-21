@@ -1,0 +1,22 @@
+X:1
+T:–³‘è‚ÌƒXƒRƒA
+T:A_Whole_New_World.musicxml
+C:ì‹ÈÒ / •Ò‹ÈÒ
+L:1/4
+M:4/4
+I:linebreak $
+K:none
+V:1 treble transpose=-7 nm="Horn in F" snm="Hn. in F"
+V:1
+[K:Eb] z!p! (F E2 | A2 F2) | z (F E2 |!>(! A2 F2)!>)! |!mp! (E2 B,2 | G3) z | (E2 B,2 | E2 D2) | %8
+ C z/ =B,/- B, D | (D C B,2) | (A,2 A2 | G3) z |!mp! E4- | E!mf! (F/A/- A/G/ E | B,4) | (E2 D2) | %16
+!mf! F z/ F/- F A | G3/2 G/ (B2- | B A G F | E) z/!f! (G/ A c) | B4- | B z/ (G/ A c) | %22
+ B F/A/- A/ G G/- | G z (3(G A B) | (B A G3/2) E/ | (B c/)G/- G z | G3/2 G/ =A3/2 c/ | %27
+ B3/2!f! (G/ A c) | B4- | B z/ (G/ A c) | B F/A/- A/ G G/- | G z (3(G A B) | (B A G3/2) E/ | %33
+ (B c/)G/- G z | G3/2 G/ A2 | A3/2 A/ A2 |!f! !>!E/ !>!F !>!G/- G/ !>!F !>!G/- | %37
+!<(! G/ !>!G !>!G/- G/ !>!G3/2!<)! ||[K:C]!ff! (E D/F/- F/E/ C | G,3) z | (E D/F/- F/E/ C | %41
+ E3/2 F/4E/4 D3/2) z/ |!p! (d ^c/e/- e/ d B/) | (d c B c) | (A/ B d/- d/ c e/- | %45
+ e) z/!f! (G/ A c) | (B3/2 A/ G B | c4) | (B3/2 A/ G B | c2)!ff! (3(c d c) | (c2 d c) | (c2 d c) | %52
+ (A2 ^F2) | G3/2!f! (E/ F A) | G4- | G z/ (E/ F A) | G D/F/- F/ E E/- | E2 (3(c d c) | (c2 d c) | %59
+ (c2 d c) | (c B A B | d c A G) |!>(! A4- | A!>)! z z2 | z4 | z4 | z4 |!mp! B z z2 |!mf! G4 | %69
+"_dim." G z/ (C/ D F) | E4- |!p! !fermata!E4 |] %72

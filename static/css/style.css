@@ -1,0 +1,202 @@
+/* ============================================= */
+/* 全体・基本スタイル                            */
+/* ============================================= */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f7f9; /* 少し青みがかった背景色 */
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+header h1 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+/* ============================================= */
+/* レイアウト関連                                */
+/* ============================================= */
+.main-content {
+    display: flex; /* Flexboxを有効にし、子要素を横並びにする */
+    gap: 20px; /* パネル間の隙間 */
+    align-items: flex-start; /* 上揃え */
+}
+
+.panel {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 少し柔らかい影 */
+    border: 1px solid #e9ecef;
+}
+
+.left-panel {
+    width: 380px; /* 左パネルの幅を固定 */
+    flex-shrink: 0; /* 画面が縮んでもこのパネルは縮まないようにする */
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* カード間の隙間 */
+}
+
+.right-panel {
+    flex-grow: 1; /* 残りの幅をすべて右パネルが使用する */
+    min-width: 0; /* Flexboxの子要素がはみ出るのを防ぐおまじない */
+    overflow-x: auto; /* 楽譜が横に長くなった場合にスクロールバーを出す */
+}
+
+/* ============================================= */
+/* カード内のスタイル                             */
+/* ============================================= */
+
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #34495e;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+/* ============================================= */
+/* フォーム要素のスタイル                         */
+/* ============================================= */
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+    font-size: 0.9em;
+}
+
+input[type="file"],
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px; /* 要素間の隙間 */
+    box-sizing: border-box; /* paddingを含めて幅100%にする */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s ease; /* ホバー時の色の変化を滑らかに */
+}
+
+button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #ced4da;
+    cursor: not-allowed;
+}
+
+#reset-selection-btn {
+    background-color: #6c757d;
+}
+#reset-selection-btn:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+/* ============================================= */
+/* JavaScriptで操作する要素のスタイル              */
+/* ============================================= */
+
+/* フレーズ選択情報の表示エリア */
+#phrase-info p {
+    margin: 8px 0;
+    font-size: 0.95em;
+    background-color: #e9f5ff;
+    padding: 5px 8px;
+    border-radius: 3px;
+}
+
+#phrase-info span {
+    font-weight: bold;
+    color: #0056b3;
+}
+
+/* 楽譜表示エリア */
+#score-display {
+    width: 100%;
+}
+
+/* abc.jsで選択された音符をハイライトするためのスタイル */
+/* JavaScript側で .selected や .selected-peak というクラスを付与する */
+.abcjs-note.selected > path {
+    fill: cornflowerblue !important; /* 他のスタイルに上書きされないように */
+}
+.abcjs-note.selected-peak > path {
+    fill: lightcoral !important;
+}
+
+/* MIDIプレーヤー */
+#player-container {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+#midi-player {
+    width: 100%;
+}
+
+/* ステータスメッセージ */
+#status-message {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #495057;
+    border-radius: 4px;
+}
+
+/* ============================================= */
+/* 🎵 音符クリック選択の色分け（修正版） */
+/* ============================================= */
+
+/* 開始音符（赤） */
+.abcjs-note.selected path,
+g.abcjs-note.selected path {
+    fill: #ff4c4c !important;
+    stroke: #ff4c4c !important;
+}
+
+/* 終了音符（青） */
+.abcjs-note.selected-end path,
+g.abcjs-note.selected-end path {
+    fill: #1e90ff !important;
+    stroke: #1e90ff !important;
+}
+
+/* 頂点音符（緑） */
+.abcjs-note.selected-peak path,
+g.abcjs-note.selected-peak path {
+    fill: #4caf50 !important;
+    stroke: #4caf50 !important;
+}
