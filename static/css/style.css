@@ -4,7 +4,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    background-color: #f4f7f9; /* 少し青みがかった背景色 */
+    background-color: #f4f7f9; /* 背景色 */
     color: #333;
     line-height: 1.6;
 }
@@ -28,7 +28,7 @@ header h1 {
 }
 
 /* ============================================= */
-/* レイアウト関連                                */
+/* レイアウト                                     */
 /* ============================================= */
 .main-content {
     display: flex; /* Flexboxを有効にし、子要素を横並びにする */
@@ -40,7 +40,7 @@ header h1 {
     background-color: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 少し柔らかい影 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 影 */
     border: 1px solid #e9ecef;
 }
 
@@ -54,7 +54,7 @@ header h1 {
 
 .right-panel {
     flex-grow: 1; /* 残りの幅をすべて右パネルが使用する */
-    min-width: 0; /* Flexboxの子要素がはみ出るのを防ぐおまじない */
+    min-width: 0; /* Flexアイテムが親要素をはみ出すのを防ぐ */
     overflow-x: auto; /* 楽譜が横に長くなった場合にスクロールバーを出す */
 }
 
@@ -104,7 +104,7 @@ button {
     cursor: pointer;
     font-size: 1em;
     font-weight: bold;
-    transition: background-color 0.2s ease; /* ホバー時の色の変化を滑らかに */
+    transition: background-color 0.2s ease; /* ホバー時の色の変化を滑らかにする */
 }
 
 button:hover:not(:disabled) {
@@ -177,7 +177,7 @@ button:disabled {
 }
 
 /* ============================================= */
-/* 🎵 音符クリック選択の色分け（修正版） */
+/* 音符クリック選択の色分け */
 /* ============================================= */
 
 /* 開始音符（赤） */

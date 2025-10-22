@@ -11,13 +11,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- ============================= -->
-    <!-- ✅ abcjsを最初に読み込む -->
+    <!-- ライブラリ読み込み -->
     <!-- ============================= -->
+    <!-- 楽譜描画ライブラリ(abcjs) -->
     <script src="{{ url_for('static', filename='js/abcjs-basic-min.js') }}"></script>
 
-    <!-- ============================= -->
-    <!-- ✅ main.jsを最後に読み込む -->
-    <!-- ============================= -->
+    <!-- アプリケーションスクリプト(main.js) -->
     <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </head>
 
@@ -29,11 +28,11 @@
 
         <div class="main-content">
             <!-- ============================================= -->
-            <!-- 左パネル -->
+            <!-- 左パネル：操作エリア -->
             <!-- ============================================= -->
             <div class="panel left-panel">
                 
-                <!-- カード1: ファイル読み込み -->
+                <!-- 1: ファイル読み込み -->
                 <div class="card">
                     <h2>1. ファイル読み込み</h2>
                     <form id="upload-form">
@@ -47,7 +46,7 @@
                     </form>
                 </div>
 
-                <!-- カード2: パート選択 -->
+                <!-- 2: パート選択 -->
                 <div class="card">
                     <h2>2. パート選択</h2>
                     <select id="part-selector" disabled>
@@ -55,7 +54,7 @@
                     </select>
                 </div>
 
-                <!-- カード3: フレーズ設定 -->
+                <!-- 3: フレーズ設定 -->
                 <div class="card">
                     <h2>3. フレーズ設定</h2>
                     <p>楽譜上のフレーズ<strong>開始 → 終了 → 頂点</strong>となる音符を順番にクリックしてください。</p>
@@ -69,7 +68,7 @@
                     <button id="reset-selection-btn">選択リセット</button>
                 </div>
 
-                <!-- カード4: 表現プリセット -->
+                <!-- 4: 表現プリセット -->
                 <div class="card">
                     <h2>4. 表現プリセット</h2>
                     <label for="tempo-preset">発想標語プリセット:</label>
@@ -87,7 +86,7 @@
                     </select>
                 </div>
 
-                <!-- カード5: 適用と再生 -->
+                <!-- 5: 適用と再生 -->
                 <div class="card">
                     <h2>5. 適用と再生</h2>
                     <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
@@ -122,16 +121,16 @@
                     ここに楽譜が表示されます。左のエリアからファイルを読み込んでください。
                 </div>
 
-                <!-- ✅ ABCJSで描画する領域 -->
+                <!-- abcjsによる楽譜描画ターゲット -->
                 <div id="score-display"></div>
 
-                <!-- ✅ 状態／エラーメッセージ表示 -->
+                <!-- 楽譜描画に関するステータス表示エリア -->
                 <div id="abc-status" style="margin-top: 10px; color: gray;"></div>
             </div>
         </div>
     </div>
 
-    <!-- Flaskから渡されたプリセットをJSで扱えるようにする -->
+    <!-- Flaskから渡されたプリセットをJavaScriptで扱えるようにする -->
     <script>
         const presetsJsonString = '{{ presets | tojson | safe }}';
         const PRESETS = JSON.parse(presetsJsonString);

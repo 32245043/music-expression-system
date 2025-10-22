@@ -1,8 +1,14 @@
 // ============================================================
-// 🎵 ABCJS + Flask note_map連携版 main.js（WAV再生対応 完全版）
+// main.js
+// ファイルアップロードとパート情報の取得
+// abcjsを利用した楽譜の描画と音符クリック処理
+// フレーズ範囲（開始・頂点・終了）の選択とUIの更新
+// プリセットに基づいた演奏表現パラメータのサーバーへの送信
+// サーバーから返されたWAVファイルの再生処理
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- DOM要素の取得 ---
     const uploadForm = document.getElementById("upload-form");
     const partSelector = document.getElementById("part-selector");
     const scoreDisplay = document.getElementById("score-display");
@@ -12,21 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const adjectivePreset = document.getElementById("adjective-preset");
     const resetSelectionBtn = document.getElementById("reset-selection-btn");
 
-    // 🎧 比較再生プレイヤー
+    //　再生プレイヤー
     const compareContainer = document.getElementById("compare-container");
 
-    let selectionMode = "start";
+    // --- グローバル変数 ---
+    let selectionMode = "start"; // "start", "end", "peak"のどれか
     let selectedNotes = { start: null, end: null, peak: null };
-    let allPartAbcData = {};
-    let allNoteMaps = {};
+    let allPartAbcData = {}; //全パートのABCデータを保持
+    let allNoteMaps = {};    // 全パートのノートマップを保持
     let currentPartIndex = null;
 
-    // ✅ WAV再生用グローバル
+    // WAV再生用にサーバーからのレスポンスを保持する
     window.lastFlaskResponse = {};
     let currentAudio = null;
 
     // ============================================
-    // 1️⃣ ファイルアップロード
+    // 1️. ファイルアップロード
     // ============================================
     uploadForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -38,13 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await res.json();
             if (result.error) throw new Error(result.error);
 
+            // サーバーからのパート情報でUIを更新
             allPartAbcData = result.all_abc_data;
             partSelector.innerHTML = "";
             result.parts.forEach((p) => {
                 const opt = document.createElement("option");
                 opt.value = p.index;
                 opt.textContent = p.name || `Part ${p.index + 1}`;
-                opt.dataset.noteMap = p.note_map;
+                opt.dataset.noteMap = p.note_map; // note_mapのパスをdata属性に保存
                 partSelector.appendChild(opt);
             });
             partSelector.disabled = false;
@@ -56,15 +64,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ============================================
-    // 2️⃣ パート選択
+    // 2️. パート選択
     // ============================================
     partSelector.addEventListener("change", async () => {
         const partIndex = parseInt(partSelector.value);
         currentPartIndex = partIndex;
         if (isNaN(partIndex)) return;
+
+        // 対応するABCデータを取得して楽譜を描画
         const abcText = allPartAbcData[partIndex];
         if (!abcText) return;
 
+        // 対応するnote_mapをサーバーから非同期で読み込み
         const noteMapFilename = partSelector.selectedOptions[0].dataset.noteMap;
         if (noteMapFilename) {
             const res = await fetch(`/output/${noteMapFilename}`);
@@ -77,14 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ============================================
-    // 3️⃣ 楽譜描画
+    // 3️. 楽譜描画
     // ============================================
     function renderScore(abcText) {
         scoreDisplay.innerHTML = "";
         ABCJS.renderAbc("score-display", abcText, {
-            add_classes: true,
-            staffwidth: 900,
+            add_classes: true, // 各SVG要素にクラスを付与
+            staffwidth: 900,   // 譜面の幅
             clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
+                // クリックイベントの伝達タイミングを考慮して少し遅延させる
                 setTimeout(() => handleNoteClick(abcElem, tuneNumber, classes, analysis, drag, mouseEvent), 200);
             }
         });
@@ -92,17 +104,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ============================================
-    // 4️⃣ 音符クリック処理
+    // 4️. 音符クリック
     // ============================================
     function handleNoteClick(abcElem, tuneNumber, classes, analysis, drag, mouseEvent) {
         const clickedEl = mouseEvent.target.closest(".abcjs-note");
         if (!clickedEl) return;
+
+        // クリックされた音符が楽譜全体の何番目かを特定
         const noteElements = Array.from(document.querySelectorAll(".abcjs-note"));
         const noteIndex = noteElements.indexOf(clickedEl);
         if (noteIndex === -1) return;
 
         const noteMap = allNoteMaps[currentPartIndex];
         const tick = noteMap && noteMap[noteIndex] ? noteMap[noteIndex].tick : null;
+
+        // 選択モードに応じて音符情報を保持し、次のモードへ移行
         const currentMode = selectionMode;
         const nextMode = (currentMode === "start") ? "end" : (currentMode === "end" ? "peak" : "start");
         selectedNotes[currentMode] = { index: noteIndex, tick, el: clickedEl };
@@ -111,16 +127,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ============================================
-    // 5️⃣ UI更新
+    // 5️. UI更新
     // ============================================
     function updateSelectionUI() {
+        // 全てのハイライトをクリア
         document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak")
             .forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
 
+        // 選択された音符にハイライト用のクラスを追加
         if (selectedNotes.start?.el) selectedNotes.start.el.classList.add("selected");
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
 
+        // 選択情報をテキストで表示
         document.getElementById("start-note-info").textContent =
             selectedNotes.start ? `index=${selectedNotes.start.index} / tick=${selectedNotes.start.tick ?? "?"}` : "未選択";
         document.getElementById("peak-note-info").textContent =
@@ -128,11 +147,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("end-note-info").textContent =
             selectedNotes.end ? `index=${selectedNotes.end.index} / tick=${selectedNotes.end.tick ?? "?"}` : "未選択";
 
+        // 全ての音符が選択されたら「適用」ボタンを有効化
         applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
     }
 
     // ============================================
-    // 6️⃣ リセット
+    // 6️. 選択リセット
     // ============================================
     resetSelectionBtn.addEventListener("click", () => {
         selectionMode = "start";
@@ -147,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ============================================
-    // 7️⃣ 「適用」ボタン
+    // 7️. 「適用」ボタンクリック
     // ============================================
     applyBtn.addEventListener("click", async () => {
         if (!selectedNotes.start || !selectedNotes.end || !selectedNotes.peak) {
@@ -174,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // 選択されたプリセットの値を合成
         const tempoSelection = tempoPreset.value;
         const adjSelection = adjectivePreset.value;
         const presetParams = {
@@ -188,6 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         statusMessage.textContent = "⏳ MIDIを加工中...";
         try {
+            // サーバーにMIDI加工リクエストを送信
             const res = await fetch("/process", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
