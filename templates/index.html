@@ -65,7 +65,10 @@
                         <p>終了: <span id="end-note-info">未選択</span></p>
                     </div>
 
-                    <button id="reset-selection-btn">選択リセット</button>
+                    <button id="reset-selection-btn">選択範囲をリセット</button>
+                    
+                    <!-- ★★★ ここに「すべての加工をリセット」ボタンを追加 ★★★ -->
+                    <button id="reset-midi-btn" style="background-color: #dc3545; margin-top: 10px;">すべての加工をリセット</button>
                 </div>
 
                 <!-- 4: 表現プリセット -->
@@ -82,6 +85,8 @@
                 <!-- 5: 適用と再生 -->
                 <div class="card">
                     <h2>5. 適用と再生</h2>
+                    <p>設定が完了したら、下のボタンを押してください。</p>
+                    <p style="font-size: 0.9em; color: #555;">MIDIの加工ができると下の聴き比べエリアが緑に光ります</p>
                     <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
                     
                     <!-- 🎧 聴き比べボタン群 -->
@@ -90,18 +95,29 @@
                         <p style="font-size: 0.9em; color: #555;">加工前後・単一パート／全体を聴き比べできます。</p>
 
                         <div class="compare-block">
-                            <button onclick="playWAV('original_single')">🎵 単一パート（元）再生</button>
-                            <button onclick="playWAV('processed_single')">🎶 単一パート（加工後）再生</button>
+                            <button onclick="playWAV('original_single', this)">🎵 単一パート（元）再生</button>
+                            <button onclick="playWAV('processed_single', this)">🎶 単一パート（加工後）再生</button>
                         </div>
 
                         <div class="compare-block">
-                            <button onclick="playWAV('original_full')">🎵 全体（元）再生</button>
-                            <button onclick="playWAV('processed_full')">🎶 全体（加工後）再生</button>
+                            <button onclick="playWAV('original_full', this)">🎵 全体（元）再生</button>
+                            <button onclick="playWAV('processed_full', this)">🎶 全体（加工後）再生</button>
                         </div>
 
                         <div style="margin-top: 10px;">
                             <button onclick="stopWAV()">⏹ 停止</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 6: 保存 -->
+                <div class="card">
+                    <h2>6. 保存</h2>
+                    <p>加工が完了すると、MIDIファイルを保存できます。</p>
+                    
+                    <!-- 保存ボタンのエリア（最初は非表示） -->
+                    <div id="save-area" style="display:none;">
+                        <button id="save-midi-btn" class="save-btn" style="width: 100%;">💾 加工後MIDIを保存</button> 
                     </div>
                 </div>
             </div>

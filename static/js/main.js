@@ -16,9 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const applyBtn = document.getElementById("apply-btn");
     const tempoPreset = document.getElementById("tempo-preset");
     const resetSelectionBtn = document.getElementById("reset-selection-btn");
+    const resetMidiBtn = document.getElementById("reset-midi-btn");
 
     //　再生プレイヤー
     const compareContainer = document.getElementById("compare-container");
+    const saveArea = document.getElementById("save-area");
 
     // --- グローバル変数 ---
     let selectionMode = "start"; // "start", "end", "peak"のどれか
@@ -36,6 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ============================================
     uploadForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        // 処理の開始時に、前の結果（比較エリアと保存エリア）を非表示にする
+        compareContainer.style.display = "none";
+        saveArea.style.display = "none";
         statusMessage.textContent = "⌛ ファイルをアップロード中...";
 
         const formData = new FormData(uploadForm);
@@ -162,9 +168,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ============================================
+    // すべての加工をリセットするボタンの処理
+    // ============================================
+    resetMidiBtn.addEventListener("click", async () => {
+        if (!confirm("本当にすべての加工をリセットしますか？この操作は元に戻せません。")) {
+            return;
+        }
+
+        statusMessage.textContent = "⏳ リセット中...";
+        try {
+            const res = await fetch("/reset_midi", { method: "POST" });
+            const result = await res.json();
+            if (result.error) throw new Error(result.error);
+            
+            statusMessage.textContent = `✅ ${result.message}`;
+            alert(result.message);
+
+            // 適用結果が表示されていたらクリアする
+            compareContainer.style.display = "none";
+            saveArea.style.display = "none";
+
+        } catch (err) {
+            console.error(err);
+            statusMessage.textContent = `⚠️ リセットエラー: ${err.message}`;
+        }
+    });
+
+    // ============================================
     // 7️. 「適用」ボタンクリック
     // ============================================
     applyBtn.addEventListener("click", async () => {
+        // ... (関数の先頭部分は変更なし) ...
         if (!selectedNotes.start || !selectedNotes.end || !selectedNotes.peak) {
             alert("開始・終了・頂点を順に選択してください。");
             return;
@@ -189,7 +223,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 選択された発想標語プリセットの値を取得
         const tempoSelection = tempoPreset.value;
         const presetParams = {
             base_cc2: PRESETS.tempo_expressions[tempoSelection]?.base_cc2 || 0,
@@ -199,6 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const phraseInfo = { start_index: startIdx, end_index: endIdx, peak_index: peakIdx };
         const partName = partSelector.selectedOptions[0].textContent;
+
 
         statusMessage.textContent = "⏳ MIDIを加工中...";
         try {
@@ -212,11 +246,46 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🎵 Flask response:", result);
             window.lastFlaskResponse = result;
 
+            // 「聴き比べ」エリアと「保存」エリアの両方を表示する
             compareContainer.style.display = "block";
-            statusMessage.textContent = "✅ WAVを聴き比べできます。";
+            saveArea.style.display = "block";
+
+            // ★★★ ここからが変更点 ★★★
+            // 1. ステータスメッセージを、より分かりやすく更新
+            statusMessage.textContent = "✅ 新しい音源を生成しました。再生して確認できます。";
+
+            // 2. 聴き比べエリアに .flash-success クラスを追加してアニメーションを開始
+            compareContainer.classList.add('flash-success');
+
+            // 3. アニメーションが終わった後（1.5秒後）に、クラスを削除する
+            //    （こうしないと、次に適用した時にアニメーションが再生されない）
+            setTimeout(() => {
+                compareContainer.classList.remove('flash-success');
+            }, 1500); // CSSで設定したアニメーションの時間と合わせる
+
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ エラー: ${err.message}`;
+        }
+    });
+
+    // ============================================
+    // MIDI保存ボタンの処理
+    // ============================================
+    document.addEventListener('click', function(event) {
+        if (event.target && event.target.id === 'save-midi-btn') {
+            const midiUrl = window.lastFlaskResponse?.processed_full;
+            if (!midiUrl) {
+                alert("保存対象のMIDIファイルが見つかりません。");
+                return;
+            }
+            const filename = midiUrl.split('/').pop();
+            const a = document.createElement('a');
+            a.href = midiUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     });
 });
@@ -224,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================
 // WAV再生
 // ============================================================
-function playWAV(type) {
+function playWAV(type, clickedButton) {
     try {
         let wavUrl = "";
         if (type === "processed_single") wavUrl = lastFlaskResponse?.processed_single_wav;
@@ -237,15 +306,33 @@ function playWAV(type) {
             return;
         }
 
+        const cacheBustingUrl = `${wavUrl}?v=${new Date().getTime()}`;
+
+        document.querySelectorAll('.compare-block button').forEach(btn => {
+            btn.classList.remove('is-playing');
+        });
+
         if (window.currentAudio) {
             window.currentAudio.pause();
             window.currentAudio.currentTime = 0;
         }
 
-        window.currentAudio = new Audio(wavUrl);
+        window.currentAudio = new Audio(cacheBustingUrl);
         window.currentAudio.play()
-            .then(() => console.log("🎧 WAV再生開始:", wavUrl))
+            .then(() => {
+                console.log("🎧 WAV再生開始:", cacheBustingUrl);
+                if (clickedButton) {
+                    clickedButton.classList.add('is-playing');
+                }
+            })
             .catch(err => console.error("⚠️ WAV再生エラー:", err));
+
+        window.currentAudio.onended = function() {
+            console.log("🎵 再生終了");
+            if (clickedButton) {
+                clickedButton.classList.remove('is-playing');
+            }
+        };
 
     } catch (err) {
         console.error("⚠️ playWAVでエラー:", err);
@@ -257,5 +344,9 @@ function stopWAV() {
         window.currentAudio.pause();
         window.currentAudio.currentTime = 0;
         console.log("⏹ WAV再生停止");
+
+        document.querySelectorAll('.compare-block button').forEach(btn => {
+            btn.classList.remove('is-playing');
+        });
     }
 }

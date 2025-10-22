@@ -104,7 +104,7 @@ button {
     cursor: pointer;
     font-size: 1em;
     font-weight: bold;
-    transition: background-color 0.2s ease; /* ホバー時の色の変化を滑らかにする */
+    transition: background-color 0.2s ease, transform 0.2s ease; /* transformも追加 */
 }
 
 button:hover:not(:disabled) {
@@ -121,6 +121,20 @@ button:disabled {
 }
 #reset-selection-btn:hover:not(:disabled) {
     background-color: #5a6268;
+}
+
+/* ============================================= */
+/* ★★★ 変更点 ① ★★★ */
+/* 聴き比べボタンのデフォルトスタイルを白っぽくする */
+/* ============================================= */
+.compare-block button {
+    background-color: #f8f9fa; /* 白っぽい背景色 */
+    color: #495057; /* 暗めの文字色 */
+    border: 1px solid #ced4da; /* 境界線 */
+    font-weight: normal; /* 太字を解除 */
+}
+.compare-block button:hover:not(:disabled) {
+    background-color: #e2e6ea; /* ホバー時は少し濃いグレーに */
 }
 
 /* ============================================= */
@@ -199,4 +213,41 @@ g.abcjs-note.selected-end path {
 g.abcjs-note.selected-peak path {
     fill: #4caf50 !important;
     stroke: #4caf50 !important;
+}
+
+
+.compare-block button.is-playing {
+    background-color: #007bff; /* 再生中の青色 */
+    color: white;
+    font-weight: bold;
+    border-color: #007bff; /* 境界線の色も合わせる */
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); /* 青い光 */
+    transform: scale(1.03); /* 少しだけ大きくして目立たせる */
+}
+
+/* style.css の一番下に追加 */
+
+/* ============================================= */
+/* UIフィードバック用のアニメーション                 */
+/* ============================================= */
+
+/* 成功時に緑色に光るアニメーション */
+@keyframes flash-animation {
+  0% {
+    background-color: #ffffff; /* 開始時の色（白） */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    background-color: #e6ffed; /* 中間点の色（薄い緑） */
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); /* 少し強めの緑の影 */
+  }
+  100% {
+    background-color: #ffffff; /* 終了時の色（白に戻る） */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* 聴き比べエリアに適用するクラス */
+#compare-container.flash-success {
+    animation: flash-animation 1.5s ease-out;
 }

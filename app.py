@@ -40,14 +40,14 @@ app.config.update(
 )
 
 # ============================================================
-# 表現プリセット
+# 表現プリセット（発想標語のみ）
 # ============================================================
 PRESET_DEFINITIONS = {
     "tempo_expressions": {
         "なし": {"base_cc2": 0, "peak_cc2": 0},
-        "Cantabile": {"base_cc2": 10, "peak_cc2": 30},
-        "Dolce": {"base_cc2": -20, "peak_cc2": -5},
-        "Maestoso": {"base_cc2": 10, "peak_cc2": 40},
+        "Cantabile": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": 30},
+        "Dolce": {"base_cc2": -20, "peak_cc2": -5, "onset_ms": 20},
+        "Maestoso": {"base_cc2": 10, "peak_cc2": 40, "onset_ms": 40},
         "Appassionato": {"base_cc2": 10, "peak_cc2": 35, "onset_ms": -10},
         "Con brio": {"base_cc2": 10, "peak_cc2": 25, "onset_ms": -30},
         "Leggiero": {"base_cc2": -10, "peak_cc2": 5, "onset_ms": -10},
@@ -107,7 +107,7 @@ def index():
     return render_template('index.html', presets=PRESET_DEFINITIONS)
 
 # ============================================================
-# ファイルアップロード処理
+# ファイルアップロード処理（★連番対応）
 # ============================================================
 @app.route('/upload', methods=['POST'])
 def upload_files():
@@ -121,22 +121,43 @@ def upload_files():
     if not (xml_file and allowed_file(xml_file.filename) and midi_file and allowed_file(midi_file.filename)):
         return jsonify({'error': '許可されていないファイル形式です'}), 400
 
+    # --- 元ファイル名と安全化 ---
     xml_filename = secure_filename(xml_file.filename)
-    midi_filename = secure_filename(midi_file.filename)
-    xml_path = os.path.join(UPLOAD_FOLDER, xml_filename)
-    midi_path = os.path.join(UPLOAD_FOLDER, midi_filename)
-    xml_file.save(xml_path)
-    midi_file.save(midi_path)
+    song_name_base = safe_name(os.path.splitext(xml_filename)[0])
 
-    # 後続の処理でファイルパスを使用するためセッションに保存
-    session['xml_path'] = xml_path
-    session['midi_path'] = midi_path
+    # --- ✅ 既存ファイル数をカウントして連番を付与 ---
+    counter = 1
+    while True:
+        # オリジナルファイル名の衝突を確認
+        original_xml_path = os.path.join(UPLOAD_FOLDER, f"{song_name_base}_{counter}_original.musicxml")
+        original_midi_path = os.path.join(UPLOAD_FOLDER, f"{song_name_base}_{counter}_original.mid")
+        if not os.path.exists(original_xml_path) and not os.path.exists(original_midi_path):
+            break
+        counter += 1
+    
+    song_name = f"{song_name_base}_{counter}"
 
-    song_name = safe_name(os.path.splitext(xml_filename)[0])
+    # 元ファイルを「_original」付きで保存
+    original_xml_path = os.path.join(UPLOAD_FOLDER, f"{song_name}_original.musicxml")
+    original_midi_path = os.path.join(UPLOAD_FOLDER, f"{song_name}_original.mid")
+    xml_file.save(original_xml_path)
+    midi_file.save(original_midi_path)
+    
+    # --- 「作業用MIDIファイル」を作成 ---
+    working_midi_path = os.path.join(UPLOAD_FOLDER, f"{song_name}_working.mid")
+    shutil.copy(original_midi_path, working_midi_path)
+
+    # --- セッションに各種パスを保存 ---
+    session['xml_path'] = original_xml_path
+    session['original_midi_path'] = original_midi_path
+    session['working_midi_path'] = working_midi_path
+    session['song_name'] = song_name
 
     try:
-        score = music21.converter.parse(xml_path)
-        processor = MidiProcessor(midi_path)
+        # MusicXMLの解析は常にオリジナルファイルで行う
+        score = music21.converter.parse(session['xml_path'])
+        # MidiProcessorには「作業用MIDI」を渡して初期化
+        processor = MidiProcessor(session['working_midi_path'])
         parts_info = []
         all_abc_data = {}
 
@@ -144,16 +165,15 @@ def upload_files():
             raw_part_name = part.partName or f"Part{i+1}"
             part_name = safe_name(raw_part_name)
 
-            # 各出力ファイルのパス
+            # ✅ 出力ファイルにも連番付きの song_name を使用
             xml_out_path = os.path.join(OUTPUT_DIRS["musicxml"], f"{song_name}_{part_name}.musicxml")
             abc_out_path = os.path.join(OUTPUT_DIRS["abc"], f"{song_name}_{part_name}.abc")
             note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{song_name}_{part_name}_note_map.json")
 
-            # パートを個別のMusicXMLファイルとして書き出し
             part.write('musicxml', fp=xml_out_path)
 
             try:
-                # パート情報からノートマップ（音符とTickの対応表）をJSONで生成
+                # note_mapはMusicXMLの構造から生成するので、processorのMIDIファイルは直接関係ない
                 processor.create_note_map_from_part(part, note_map_path)
             except Exception as e:
                 app.logger.error(f"note_map生成エラー: {e}")
@@ -180,22 +200,23 @@ def upload_files():
             })
 
         return jsonify({
-            'message': 'ファイルが正常にアップロードされました',
+            'message': f'ファイルが正常にアップロードされました（連番: {counter}）',
             'parts': parts_info,
-            'all_abc_data': all_abc_data
+            'all_abc_data': all_abc_data,
+            'version': counter
         })
     except Exception as e:
         app.logger.exception("MusicXML読み込みエラー")
         return jsonify({'error': f'MusicXML読み込みエラー: {str(e)}'}), 500
 
 # ============================================================
-# MIDI加工処理
+# MIDI加工処理（曲名＋パート名付き出力）
 # ============================================================
 @app.route('/process', methods=['POST'])
 def process_midi():
-    # 指定されたパートのフレーズに表現を適用し、MIDIとWAVファイルを生成する
-    if 'midi_path' not in session:
-        return jsonify({'error': 'MIDIファイルがアップロードされていません。'}), 400
+    # 加工対象はセッションに保存された「作業用MIDI」
+    if 'working_midi_path' not in session:
+        return jsonify({'error': '作業用MIDIファイルが見つかりません。'}), 400
 
     data = request.json
     part_index = data.get('partIndex')
@@ -207,13 +228,14 @@ def process_midi():
         return jsonify({'error': '処理に必要なデータが不足しています。'}), 400
 
     try:
-        processor = MidiProcessor(session['midi_path'])
-
-        # 対応するノートマップJSONファイルを探す
+        # MidiProcessorに現在の「作業用MIDI」を読み込ませる
+        processor = MidiProcessor(session['working_midi_path'])
+        song_name = session.get("song_name", "unknown_song")
         safe_part_name = part_name.replace(" ", "_").replace("/", "_")
+
         note_map_candidates = [
             f for f in os.listdir(OUTPUT_DIRS["json"])
-            if safe_part_name in f and f.endswith("_note_map.json")
+            if safe_name(part_name) in f and f.endswith("_note_map.json") and song_name in f
         ]
         if not note_map_candidates:
             return jsonify({'error': f'note_mapが見つかりません: {part_name}'}), 404
@@ -222,17 +244,15 @@ def process_midi():
         with open(note_map_path, 'r', encoding='utf-8') as f:
             note_map = json.load(f)
 
-        # 音符のインデックスをMIDIのTickに変換する
         def idx_to_tick(idx):
             entry = next((e for e in note_map if e['index'] == idx), None)
             return entry['tick'] if entry else None
 
-        # フレーズの開始、ピーク、終了位置をTickに変換
         start_tick = idx_to_tick(phrase_info['start_index'])
         peak_tick = idx_to_tick(phrase_info['peak_index'])
         end_tick = idx_to_tick(phrase_info['end_index'])
-
-        # 出力ディレクトリのパス
+        
+        # --- ディレクトリ作成 ---
         single_processed_dir = os.path.join(OUTPUT_DIRS["midi_single"], "processed")
         full_processed_dir = os.path.join(OUTPUT_DIRS["midi_full"], "processed")
         single_original_dir = os.path.join(OUTPUT_DIRS["midi_single"], "original")
@@ -242,28 +262,35 @@ def process_midi():
         os.makedirs(single_original_dir, exist_ok=True)
         os.makedirs(full_original_dir, exist_ok=True)
 
-        # 比較用のMIDIファイルを作成
-        original_single_out = os.path.join(single_original_dir, f"part{part_index+1}_original.mid")
-        original_full_out = os.path.join(full_original_dir, "full_original.mid")
+        # --- オリジナルMIDIの出力（初回のみ） ---
+        original_single_out = os.path.join(single_original_dir, f"{song_name}_{safe_part_name}_original.mid")
+        original_full_out = os.path.join(full_original_dir, f"{song_name}_full_original.mid")
         if not os.path.exists(original_full_out):
-            shutil.copy(session['midi_path'], original_full_out)
+            shutil.copy(session['original_midi_path'], original_full_out)
         if not os.path.exists(original_single_out):
-            processor.save_single_part_to_file(part_index, original_single_out)
+            # オリジナルMIDIから単一パートを抜き出す
+            original_processor = MidiProcessor(session['original_midi_path'])
+            original_processor.save_single_part_to_file(part_index, original_single_out)
 
-        # MIDIに表現を適用
-        processed_single = processor.apply_expression_by_ticks(part_index, start_tick, end_tick, peak_tick, preset_params)
-        single_out_path = os.path.join(single_processed_dir, f"processed_part{part_index+1}.mid")
-        processor.save_to_file(processed_single, single_out_path)
-
+        # --- 加工処理 ---
+        # 全パート加工後のMIDIオブジェクトを取得し、「作業用MIDI」に上書き保存
         processed_full = processor.apply_expression_by_ticks(None, start_tick, end_tick, peak_tick, preset_params)
-        full_out_path = os.path.join(full_processed_dir, "processed_full.mid")
-        processor.save_to_file(processed_full, full_out_path)
+        processor.save_to_file(processed_full, session['working_midi_path'])
+
+        # 単一パート加工後のMIDIオブジェクトも取得（これはファイルには直接保存しない）
+        processed_single = processor.apply_expression_by_ticks(part_index, start_tick, end_tick, peak_tick, preset_params)
+
+        # --- ダウンロード/再生用のファイルとして出力 ---
+        single_out_path = os.path.join(single_processed_dir, f"{song_name}_{safe_part_name}_processed.mid")
+        processor.save_to_file(processed_single, single_out_path)
+        
+        full_out_path = os.path.join(full_processed_dir, f"{song_name}_full_processed.mid")
+        shutil.copy(session['working_midi_path'], full_out_path) # 最新の作業用MIDIをコピー
 
         # --- FluidSynthでMIDIからWAVへの変換 ---
         fluidsynth_exe = r"C:\tools\fluidsynth\bin\fluidsynth.exe"
         soundfont_path = r"soundfonts\FluidR3_GM.sf2"
 
-        # WAVファイルへの出力ディレクトリ構造をMIDIと合わせる
         audio_root = os.path.join(OUTPUT_FOLDER, "audio")
         single_audio_original = os.path.join(audio_root, "single_parts", "original")
         single_audio_processed = os.path.join(audio_root, "single_parts", "processed")
@@ -273,41 +300,54 @@ def process_midi():
         for d in [single_audio_original, single_audio_processed, full_audio_original, full_audio_processed]:
             os.makedirs(d, exist_ok=True)
 
-        # WAVファイルの出力パス
-        processed_wav_single = os.path.join(single_audio_processed, f"processed_part{part_index+1}.wav")
-        original_wav_single = os.path.join(single_audio_original, f"part{part_index+1}_original.wav")
-        processed_wav_full = os.path.join(full_audio_processed, "processed_full.wav")
-        original_wav_full = os.path.join(full_audio_original, "full_original.wav")
+        processed_wav_single = os.path.join(single_audio_processed, f"{song_name}_{safe_part_name}_processed.wav")
+        original_wav_single = os.path.join(single_audio_original, f"{song_name}_{safe_part_name}_original.wav")
+        processed_wav_full = os.path.join(full_audio_processed, f"{song_name}_full_processed.wav")
+        original_wav_full = os.path.join(full_audio_original, f"{song_name}_full_original.wav")
 
         try:
-            # 各MIDIファイルをWAVに変換
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, single_out_path, "-F", processed_wav_single, "-r", "44100"],
-                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_single_out, "-F", original_wav_single, "-r", "44100"],
-                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, full_out_path, "-F", processed_wav_full, "-r", "44100"],
-                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_full_out, "-F", original_wav_full, "-r", "44100"],
-                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # 加工後のWAVを生成
+            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, single_out_path, "-F", processed_wav_single, "-r", "44100"], check=True)
+            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, full_out_path, "-F", processed_wav_full, "-r", "44100"], check=True)
+            # オリジナルWAVがなければ生成
+            if not os.path.exists(original_wav_single):
+                subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_single_out, "-F", original_wav_single, "-r", "44100"], check=True)
+            if not os.path.exists(original_wav_full):
+                subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_full_out, "-F", original_wav_full, "-r", "44100"], check=True)
             print(f"✅ WAV生成完了: {processed_wav_single}")
         except subprocess.CalledProcessError as e:
             print("⚠️ FluidSynth 実行エラー:", e.stderr.decode(errors="ignore"))
 
-        # フロントエンドに生成されたファイルのパスを返す
         return jsonify({
-            "original_single": f"/output/midi/single_parts/original/part{part_index+1}_original.mid",
-            "processed_single": f"/output/midi/single_parts/processed/processed_part{part_index+1}.mid",
-            "original_full": "/output/midi/full_parts/original/full_original.mid",
-            "processed_full": "/output/midi/full_parts/processed/processed_full.mid",
-            "original_single_wav": f"/output/audio/single_parts/original/part{part_index+1}_original.wav",
-            "processed_single_wav": f"/output/audio/single_parts/processed/processed_part{part_index+1}.wav",
-            "original_full_wav": "/output/audio/full_parts/original/full_original.wav",
-            "processed_full_wav": "/output/audio/full_parts/processed/processed_full.wav"
+            "original_single": f"/output/midi/single_parts/original/{os.path.basename(original_single_out)}",
+            "processed_single": f"/output/midi/single_parts/processed/{os.path.basename(single_out_path)}",
+            "original_full": f"/output/midi/full_parts/original/{os.path.basename(original_full_out)}",
+            "processed_full": f"/output/midi/full_parts/processed/{os.path.basename(full_out_path)}",
+            "original_single_wav": f"/output/audio/single_parts/original/{os.path.basename(original_wav_single)}",
+            "processed_single_wav": f"/output/audio/single_parts/processed/{os.path.basename(processed_wav_single)}",
+            "original_full_wav": f"/output/audio/full_parts/original/{os.path.basename(original_wav_full)}",
+            "processed_full_wav": f"/output/audio/full_parts/processed/{os.path.basename(processed_wav_full)}"
         })
 
     except Exception as e:
         app.logger.exception("MIDI処理エラー")
         return jsonify({'error': f'MIDI処理中にエラーが発生しました: {str(e)}'}), 500
+
+# ============================================================
+# ★★★ 新しいルート：MIDIのリセット ★★★
+# ============================================================
+@app.route('/reset_midi', methods=['POST'])
+def reset_midi():
+    """すべての加工をリセットして、元のMIDIの状態に戻す"""
+    if 'original_midi_path' in session and 'working_midi_path' in session:
+        try:
+            # 元のMIDIファイルを、作業用MIDIファイルに上書きコピーする
+            shutil.copy(session['original_midi_path'], session['working_midi_path'])
+            return jsonify({'message': 'すべての加工をリセットしました。'})
+        except Exception as e:
+            app.logger.exception("リセットエラー")
+            return jsonify({'error': f'リセット中にエラーが発生しました: {str(e)}'}), 500
+    return jsonify({'error': 'リセット対象のファイルが見つかりません。'}), 400
 
 # ============================================================
 # WAV配信ルート
