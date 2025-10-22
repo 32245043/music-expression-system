@@ -218,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const result = await res.json();
             console.log("🎵 Flask response:", result);
-            window.lastFlaskResponse = result; // ✅ WAV再生用URLを保持
+            window.lastFlaskResponse = result; // WAV再生用にURLを保持
 
             compareContainer.style.display = "block";
             statusMessage.textContent = "✅ WAVを聴き比べできます。";
@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ============================================================
-// 🎧 WAV再生関数（Tone.js不要）
+// WAV再生
 // ============================================================
 function playWAV(type) {
     try {
