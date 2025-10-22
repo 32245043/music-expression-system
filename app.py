@@ -55,13 +55,6 @@ PRESET_DEFINITIONS = {
         "Risoluto": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10},
         "Sostenuto": {"base_cc2": 0, "peak_cc2": 10, "onset_ms": 30},
         "Marcato": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": 0},
-
-    },
-    "adjective_expressions": {
-        "なし": {"base_cc2": 0, "peak_cc2": 0},
-        "明るい": {"base_cc2": 5, "peak_cc2": 20},
-        "華やか": {"base_cc2": 10, "peak_cc2": 28},
-        "暗い": {"base_cc2": -5, "peak_cc2": 8},
     }
 }
 

@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusMessage = document.getElementById("status-message");
     const applyBtn = document.getElementById("apply-btn");
     const tempoPreset = document.getElementById("tempo-preset");
-    const adjectivePreset = document.getElementById("adjective-preset");
     const resetSelectionBtn = document.getElementById("reset-selection-btn");
 
     //　再生プレイヤー
@@ -130,16 +129,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5️. UI更新
     // ============================================
     function updateSelectionUI() {
-        // 全てのハイライトをクリア
         document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak")
             .forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
 
-        // 選択された音符にハイライト用のクラスを追加
         if (selectedNotes.start?.el) selectedNotes.start.el.classList.add("selected");
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
 
-        // 選択情報をテキストで表示
         document.getElementById("start-note-info").textContent =
             selectedNotes.start ? `index=${selectedNotes.start.index} / tick=${selectedNotes.start.tick ?? "?"}` : "未選択";
         document.getElementById("peak-note-info").textContent =
@@ -147,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("end-note-info").textContent =
             selectedNotes.end ? `index=${selectedNotes.end.index} / tick=${selectedNotes.end.tick ?? "?"}` : "未選択";
 
-        // 全ての音符が選択されたら「適用」ボタンを有効化
         applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
     }
 
@@ -194,14 +189,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 選択されたプリセットの値を合成
+        // 選択された発想標語プリセットの値を取得
         const tempoSelection = tempoPreset.value;
-        const adjSelection = adjectivePreset.value;
         const presetParams = {
-            base_cc2: (PRESETS.tempo_expressions[tempoSelection]?.base_cc2 || 0) +
-                      (PRESETS.adjective_expressions[adjSelection]?.base_cc2 || 0),
-            peak_cc2: (PRESETS.tempo_expressions[tempoSelection]?.peak_cc2 || 0) +
-                      (PRESETS.adjective_expressions[adjSelection]?.peak_cc2 || 0)
+            base_cc2: PRESETS.tempo_expressions[tempoSelection]?.base_cc2 || 0,
+            peak_cc2: PRESETS.tempo_expressions[tempoSelection]?.peak_cc2 || 0,
+            onset_ms: PRESETS.tempo_expressions[tempoSelection]?.onset_ms || 0
         };
 
         const phraseInfo = { start_index: startIdx, end_index: endIdx, peak_index: peakIdx };
@@ -209,7 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         statusMessage.textContent = "⏳ MIDIを加工中...";
         try {
-            // サーバーにMIDI加工リクエストを送信
             const res = await fetch("/process", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -218,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const result = await res.json();
             console.log("🎵 Flask response:", result);
-            window.lastFlaskResponse = result; // WAV再生用にURLを保持
+            window.lastFlaskResponse = result;
 
             compareContainer.style.display = "block";
             statusMessage.textContent = "✅ WAVを聴き比べできます。";
@@ -245,13 +237,11 @@ function playWAV(type) {
             return;
         }
 
-        // 再生中の音を止める
         if (window.currentAudio) {
             window.currentAudio.pause();
             window.currentAudio.currentTime = 0;
         }
 
-        // 新規Audioで再生
         window.currentAudio = new Audio(wavUrl);
         window.currentAudio.play()
             .then(() => console.log("🎧 WAV再生開始:", wavUrl))

@@ -77,13 +77,6 @@
                         <option value="{{ name }}">{{ name }}</option>
                         {% endfor %}
                     </select>
-                    <br>
-                    <label for="adjective-preset">形容詞プリセット:</label>
-                    <select id="adjective-preset">
-                        {% for name, params in presets.adjective_expressions.items() %}
-                        <option value="{{ name }}">{{ name }}</option>
-                        {% endfor %}
-                    </select>
                 </div>
 
                 <!-- 5: 適用と再生 -->
