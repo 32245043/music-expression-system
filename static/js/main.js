@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const tempoPreset = document.getElementById("tempo-preset");
     const resetSelectionBtn = document.getElementById("reset-selection-btn");
     const resetMidiBtn = document.getElementById("reset-midi-btn");
+    const undoBtn = document.getElementById("undo-btn");
 
     //　再生プレイヤー
     const compareContainer = document.getElementById("compare-container");
@@ -33,31 +34,139 @@ document.addEventListener("DOMContentLoaded", () => {
     window.lastFlaskResponse = {};
     let currentAudio = null;
 
+    function updateScoreDecorations(history) {
+        document.querySelectorAll('.decoration-group').forEach(el => el.remove());
+        if (!history || history.length === 0) return;
+        
+        const allNoteElements = Array.from(document.querySelectorAll(".abcjs-note"));
+        if (allNoteElements.length === 0) return;
+
+        const scoreSVG = scoreDisplay.querySelector("svg");
+        if (!scoreSVG) return;
+
+        history.forEach(instruction => {
+            const phrase = instruction.phrase;
+            const presetName = instruction.preset_name;
+
+            const startNoteEl = allNoteElements[phrase.start_index];
+            const endNoteEl = allNoteElements[phrase.end_index];
+            const peakNoteEl = allNoteElements[phrase.peak_index]; // ★ 頂点音符を取得
+
+            if (startNoteEl && endNoteEl && peakNoteEl) { // ★ 頂点音符もチェック
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.classList.add('decoration-group');
+                const svgRect = scoreSVG.getBoundingClientRect();
+
+                // === 1. フレーズ全体のハイライトを描画 ===
+                let lineNotes = [];
+                for (let i = phrase.start_index; i <= phrase.end_index; i++) {
+                    const currentNoteEl = allNoteElements[i];
+                    if (!currentNoteEl) continue;
+                    if (lineNotes.length === 0) {
+                        lineNotes.push(currentNoteEl);
+                    } else {
+                        const prevNoteRect = lineNotes[lineNotes.length - 1].getBoundingClientRect();
+                        const currentNoteRect = currentNoteEl.getBoundingClientRect();
+                        if (Math.abs(prevNoteRect.top - currentNoteRect.top) < prevNoteRect.height) {
+                            lineNotes.push(currentNoteEl);
+                        } else {
+                            drawHighlightForLine(lineNotes, group, svgRect);
+                            lineNotes = [currentNoteEl];
+                        }
+                    }
+                }
+                if (lineNotes.length > 0) {
+                    drawHighlightForLine(lineNotes, group, svgRect);
+                }
+
+                // === 2. 頂点音符のハイライトを重ねて描画 ===
+                const peakRect = peakNoteEl.getBoundingClientRect();
+                const peakHighlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                const padding = 2; // 少しだけはみ出すように調整
+                peakHighlight.setAttribute("x", peakRect.left - svgRect.left - padding);
+                peakHighlight.setAttribute("y", peakRect.top - svgRect.top - padding);
+                peakHighlight.setAttribute("width", peakRect.width + (padding * 2));
+                peakHighlight.setAttribute("height", peakRect.height + (padding * 2));
+                peakHighlight.classList.add('phrase-peak-highlight'); // 新しいCSSクラス
+                group.appendChild(peakHighlight);
+
+                // === 3. 発想標語のテキストを描画 ===
+                const startRect = startNoteEl.getBoundingClientRect();
+                const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                textEl.setAttribute("x", startRect.left - svgRect.left + (startRect.width / 2));
+                textEl.setAttribute("y", startRect.top - svgRect.top - 12);
+                textEl.setAttribute("text-anchor", "middle");
+                textEl.classList.add('expression-text');
+                textEl.textContent = presetName || 'Applied';
+                group.appendChild(textEl);
+                
+                scoreSVG.appendChild(group);
+            }
+        });
+    }
+
+    // 指定された音符の配列から1行分のハイライトを作成するヘルパー関数
+    function drawHighlightForLine(noteElements, group, svgRect) {
+        if (noteElements.length === 0) return;
+        const firstNoteRect = noteElements[0].getBoundingClientRect();
+        const lastNoteRect = noteElements[noteElements.length - 1].getBoundingClientRect();
+        const padding = 5;
+
+        const rectEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rectEl.setAttribute("x", firstNoteRect.left - svgRect.left - padding);
+        rectEl.setAttribute("y", firstNoteRect.top - svgRect.top - padding);
+        rectEl.setAttribute("width", (lastNoteRect.right - firstNoteRect.left) + (padding * 2));
+        rectEl.setAttribute("height", firstNoteRect.height + (padding * 2));
+        rectEl.classList.add('phrase-highlight-rect');
+        group.appendChild(rectEl);
+    }
+    
+    function handleServerResponse(result) {
+        if (result.error) {
+            alert(`エラー: ${result.error}`);
+            statusMessage.textContent = `⚠️ エラー: ${result.error}`;
+            throw new Error(result.error);
+        }
+        
+        if (result.message) {
+             alert(result.message);
+             statusMessage.textContent = `✅ ${result.message}`;
+        }
+        
+        window.lastFlaskResponse = result;
+
+        if (result.history_empty) {
+            compareContainer.style.display = "none";
+            saveArea.style.display = "none";
+            updateScoreDecorations([]);
+        } else {
+            compareContainer.style.display = "block";
+            saveArea.style.display = "block";
+            flashPlayer();
+            updateScoreDecorations(result.history);
+        }
+    }
+
     // ============================================
     // 1️. ファイルアップロード
     // ============================================
     uploadForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-
-        // 処理の開始時に、前の結果（比較エリアと保存エリア）を非表示にする
         compareContainer.style.display = "none";
         saveArea.style.display = "none";
         statusMessage.textContent = "⌛ ファイルをアップロード中...";
-
         const formData = new FormData(uploadForm);
         try {
             const res = await fetch("/upload", { method: "POST", body: formData });
             const result = await res.json();
             if (result.error) throw new Error(result.error);
-
-            // サーバーからのパート情報でUIを更新
             allPartAbcData = result.all_abc_data;
             partSelector.innerHTML = "";
             result.parts.forEach((p) => {
                 const opt = document.createElement("option");
                 opt.value = p.index;
                 opt.textContent = p.name || `Part ${p.index + 1}`;
-                opt.dataset.noteMap = p.note_map; // note_mapのパスをdata属性に保存
+                opt.dataset.noteMap = p.note_map;
                 partSelector.appendChild(opt);
             });
             partSelector.disabled = false;
@@ -75,18 +184,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const partIndex = parseInt(partSelector.value);
         currentPartIndex = partIndex;
         if (isNaN(partIndex)) return;
-
-        // 対応するABCデータを取得して楽譜を描画
         const abcText = allPartAbcData[partIndex];
         if (!abcText) return;
-
-        // 対応するnote_mapをサーバーから非同期で読み込み
         const noteMapFilename = partSelector.selectedOptions[0].dataset.noteMap;
         if (noteMapFilename) {
             const res = await fetch(`/output/${noteMapFilename}`);
             if (res.ok) {
                 allNoteMaps[partIndex] = await res.json();
-                console.log("✅ note_map loaded:", allNoteMaps[partIndex].length, "notes");
             }
         }
         renderScore(abcText);
@@ -98,32 +202,32 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderScore(abcText) {
         scoreDisplay.innerHTML = "";
         ABCJS.renderAbc("score-display", abcText, {
-            add_classes: true, // 各SVG要素にクラスを付与
-            staffwidth: 900,   // 譜面の幅
+            add_classes: true,
+            staffwidth: 900,
             clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
-                // クリックイベントの伝達タイミングを考慮して少し遅延させる
-                setTimeout(() => handleNoteClick(abcElem, tuneNumber, classes, analysis, drag, mouseEvent), 200);
+                const clickedEl = mouseEvent.target.closest(".abcjs-note");
+                if (clickedEl) {
+                    handleNoteClick(clickedEl);
+                }
             }
         });
+        
+        setTimeout(() => {
+            updateScoreDecorations(window.lastFlaskResponse?.history);
+        }, 200);
+
         statusMessage.textContent = "✅ 音符をクリックして範囲を指定できます。";
     }
 
     // ============================================
     // 4️. 音符クリック
     // ============================================
-    function handleNoteClick(abcElem, tuneNumber, classes, analysis, drag, mouseEvent) {
-        const clickedEl = mouseEvent.target.closest(".abcjs-note");
-        if (!clickedEl) return;
-
-        // クリックされた音符が楽譜全体の何番目かを特定
+    function handleNoteClick(clickedEl) {
         const noteElements = Array.from(document.querySelectorAll(".abcjs-note"));
         const noteIndex = noteElements.indexOf(clickedEl);
         if (noteIndex === -1) return;
-
         const noteMap = allNoteMaps[currentPartIndex];
         const tick = noteMap && noteMap[noteIndex] ? noteMap[noteIndex].tick : null;
-
-        // 選択モードに応じて音符情報を保持し、次のモードへ移行
         const currentMode = selectionMode;
         const nextMode = (currentMode === "start") ? "end" : (currentMode === "end" ? "peak" : "start");
         selectedNotes[currentMode] = { index: noteIndex, tick, el: clickedEl };
@@ -137,18 +241,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateSelectionUI() {
         document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak")
             .forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
-
         if (selectedNotes.start?.el) selectedNotes.start.el.classList.add("selected");
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
-
-        document.getElementById("start-note-info").textContent =
-            selectedNotes.start ? `index=${selectedNotes.start.index} / tick=${selectedNotes.start.tick ?? "?"}` : "未選択";
-        document.getElementById("peak-note-info").textContent =
-            selectedNotes.peak ? `index=${selectedNotes.peak.index} / tick=${selectedNotes.peak.tick ?? "?"}` : "未選択";
-        document.getElementById("end-note-info").textContent =
-            selectedNotes.end ? `index=${selectedNotes.end.index} / tick=${selectedNotes.end.tick ?? "?"}` : "未選択";
-
+        document.getElementById("start-note-info").textContent = selectedNotes.start ? `index=${selectedNotes.start.index} / tick=${selectedNotes.start.tick}` : "未選択";
+        document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index} / tick=${selectedNotes.peak.tick}` : "未選択";
+        document.getElementById("end-note-info").textContent = selectedNotes.end ? `index=${selectedNotes.end.index} / tick=${selectedNotes.end.tick}` : "未選択";
         applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
     }
 
@@ -158,36 +256,29 @@ document.addEventListener("DOMContentLoaded", () => {
     resetSelectionBtn.addEventListener("click", () => {
         selectionMode = "start";
         selectedNotes = { start: null, end: null, peak: null };
-        document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak")
-            .forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
-        applyBtn.disabled = true;
+        updateSelectionUI();
         statusMessage.textContent = "選択をリセットしました。";
-        document.getElementById("start-note-info").textContent = "未選択";
-        document.getElementById("peak-note-info").textContent = "未選択";
-        document.getElementById("end-note-info").textContent = "未選択";
     });
 
-    // ============================================
-    // すべての加工をリセットするボタンの処理
-    // ============================================
-    resetMidiBtn.addEventListener("click", async () => {
-        if (!confirm("本当にすべての加工をリセットしますか？この操作は元に戻せません。")) {
-            return;
+    undoBtn.addEventListener("click", async () => {
+        statusMessage.textContent = "⏳ 元に戻しています...";
+        try {
+            const res = await fetch("/undo", { method: "POST" });
+            const result = await res.json();
+            handleServerResponse(result);
+        } catch (err) {
+            console.error(err);
+            statusMessage.textContent = `⚠️ Undoエラー: ${err.message}`;
         }
+    });
 
+    resetMidiBtn.addEventListener("click", async () => {
+        if (!confirm("本当にすべての加工をリセットしますか？この操作は元に戻せません。")) return;
         statusMessage.textContent = "⏳ リセット中...";
         try {
             const res = await fetch("/reset_midi", { method: "POST" });
             const result = await res.json();
-            if (result.error) throw new Error(result.error);
-            
-            statusMessage.textContent = `✅ ${result.message}`;
-            alert(result.message);
-
-            // 適用結果が表示されていたらクリアする
-            compareContainer.style.display = "none";
-            saveArea.style.display = "none";
-
+            handleServerResponse(result);
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ リセットエラー: ${err.message}`;
@@ -198,91 +289,69 @@ document.addEventListener("DOMContentLoaded", () => {
     // 7️. 「適用」ボタンクリック
     // ============================================
     applyBtn.addEventListener("click", async () => {
-        // ... (関数の先頭部分は変更なし) ...
         if (!selectedNotes.start || !selectedNotes.end || !selectedNotes.peak) {
             alert("開始・終了・頂点を順に選択してください。");
             return;
         }
-        if (currentPartIndex === null) {
-            alert("パートを選択してください。");
-            return;
-        }
+        
+        const loadingSpinner = document.getElementById("loading-spinner");
 
-        const partIndex = currentPartIndex;
-        const noteMap = allNoteMaps[partIndex];
-        if (!noteMap) {
-            alert("note_mapが読み込まれていません。");
-            return;
-        }
+        // --- 処理開始 ---
+        loadingSpinner.classList.remove("hidden"); // スピナーを表示
+        applyBtn.disabled = true; // ボタンを無効化
+        statusMessage.textContent = "⏳ MIDIを加工してWAVを生成中...";
 
-        const startIdx = selectedNotes.start.index;
-        const endIdx = selectedNotes.end.index;
-        const peakIdx = selectedNotes.peak.index;
-        if (startIdx >= endIdx) {
-            alert("終了位置は開始位置より後にしてください。");
-            return;
-        }
-
-        const tempoSelection = tempoPreset.value;
-        const presetParams = {
-            base_cc2: PRESETS.tempo_expressions[tempoSelection]?.base_cc2 || 0,
-            peak_cc2: PRESETS.tempo_expressions[tempoSelection]?.peak_cc2 || 0,
-            onset_ms: PRESETS.tempo_expressions[tempoSelection]?.onset_ms || 0
-        };
-
-        const phraseInfo = { start_index: startIdx, end_index: endIdx, peak_index: peakIdx };
-        const partName = partSelector.selectedOptions[0].textContent;
-
-
-        statusMessage.textContent = "⏳ MIDIを加工中...";
         try {
+            const partIndex = currentPartIndex;
+            const phraseInfo = {
+                start_index: selectedNotes.start.index,
+                end_index: selectedNotes.end.index,
+                peak_index: selectedNotes.peak.index
+            };
+            const tempoSelection = tempoPreset.value;
+            const presetParams = PRESETS.tempo_expressions[tempoSelection];
+            const partName = partSelector.selectedOptions[0].textContent;
+
             const res = await fetch("/process", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ partIndex, partName, phrase: phraseInfo, presetParams })
+                body: JSON.stringify({ partIndex, partName, phrase: phraseInfo, presetParams, presetName: tempoSelection })
             });
-
             const result = await res.json();
-            console.log("🎵 Flask response:", result);
-            window.lastFlaskResponse = result;
-
-            // 「聴き比べ」エリアと「保存」エリアの両方を表示する
-            compareContainer.style.display = "block";
-            saveArea.style.display = "block";
-
-            // ★★★ ここからが変更点 ★★★
-            // 1. ステータスメッセージを、より分かりやすく更新
-            statusMessage.textContent = "✅ 新しい音源を生成しました。再生して確認できます。";
-
-            // 2. 聴き比べエリアに .flash-success クラスを追加してアニメーションを開始
-            compareContainer.classList.add('flash-success');
-
-            // 3. アニメーションが終わった後（1.5秒後）に、クラスを削除する
-            //    （こうしないと、次に適用した時にアニメーションが再生されない）
-            setTimeout(() => {
-                compareContainer.classList.remove('flash-success');
-            }, 1500); // CSSで設定したアニメーションの時間と合わせる
+            handleServerResponse(result);
 
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ エラー: ${err.message}`;
+        } finally {
+            // --- 処理終了（成功でも失敗でも実行） ---
+            loadingSpinner.classList.add("hidden"); // スピナーを隠す
+            // 選択が完了している場合のみボタンを有効に戻す
+            applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
         }
     });
+    
+    function flashPlayer() {
+        compareContainer.classList.remove('flash-success');
+        void compareContainer.offsetWidth;
+        compareContainer.classList.add('flash-success');
+    }
 
     // ============================================
     // MIDI保存ボタンの処理
     // ============================================
     document.addEventListener('click', function(event) {
         if (event.target && event.target.id === 'save-midi-btn') {
-            const midiUrl = window.lastFlaskResponse?.processed_full;
-            if (!midiUrl) {
+            const wavPath = window.lastFlaskResponse?.processed_full_wav;
+            if(!wavPath) {
                 alert("保存対象のMIDIファイルが見つかりません。");
                 return;
             }
-            const filename = midiUrl.split('/').pop();
+            const midiFilename = wavPath.split('/').pop().replace('_full_processed.wav', '_full_processed.mid');
+            const finalMidiUrl = `/output/midi/full_parts/processed/${midiFilename}`;
             const a = document.createElement('a');
-            a.href = midiUrl;
-            a.download = filename;
+            a.href = finalMidiUrl;
+            a.download = midiFilename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -296,44 +365,24 @@ document.addEventListener("DOMContentLoaded", () => {
 function playWAV(type, clickedButton) {
     try {
         let wavUrl = "";
-        if (type === "processed_single") wavUrl = lastFlaskResponse?.processed_single_wav;
-        else if (type === "original_single") wavUrl = lastFlaskResponse?.original_single_wav;
-        else if (type === "processed_full") wavUrl = lastFlaskResponse?.processed_full_wav;
-        else if (type === "original_full") wavUrl = lastFlaskResponse?.original_full_wav;
-
-        if (!wavUrl) {
-            console.warn("⚠️ WAVファイルのURLが取得できませんでした。");
-            return;
-        }
+        if (type === "processed_single") wavUrl = window.lastFlaskResponse?.processed_single_wav;
+        else if (type === "original_single") wavUrl = window.lastFlaskResponse?.original_single_wav;
+        else if (type === "processed_full") wavUrl = window.lastFlaskResponse?.processed_full_wav;
+        else if (type === "original_full") wavUrl = window.lastFlaskResponse?.original_full_wav;
+        if (!wavUrl) return;
 
         const cacheBustingUrl = `${wavUrl}?v=${new Date().getTime()}`;
-
-        document.querySelectorAll('.compare-block button').forEach(btn => {
-            btn.classList.remove('is-playing');
-        });
-
+        document.querySelectorAll('.compare-block button').forEach(btn => btn.classList.remove('is-playing'));
         if (window.currentAudio) {
             window.currentAudio.pause();
-            window.currentAudio.currentTime = 0;
         }
-
         window.currentAudio = new Audio(cacheBustingUrl);
-        window.currentAudio.play()
-            .then(() => {
-                console.log("🎧 WAV再生開始:", cacheBustingUrl);
-                if (clickedButton) {
-                    clickedButton.classList.add('is-playing');
-                }
-            })
-            .catch(err => console.error("⚠️ WAV再生エラー:", err));
-
+        window.currentAudio.play().then(() => {
+            if (clickedButton) clickedButton.classList.add('is-playing');
+        });
         window.currentAudio.onended = function() {
-            console.log("🎵 再生終了");
-            if (clickedButton) {
-                clickedButton.classList.remove('is-playing');
-            }
+            if (clickedButton) clickedButton.classList.remove('is-playing');
         };
-
     } catch (err) {
         console.error("⚠️ playWAVでエラー:", err);
     }
@@ -343,10 +392,6 @@ function stopWAV() {
     if (window.currentAudio) {
         window.currentAudio.pause();
         window.currentAudio.currentTime = 0;
-        console.log("⏹ WAV再生停止");
-
-        document.querySelectorAll('.compare-block button').forEach(btn => {
-            btn.classList.remove('is-playing');
-        });
+        document.querySelectorAll('.compare-block button').forEach(btn => btn.classList.remove('is-playing'));
     }
 }

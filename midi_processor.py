@@ -19,9 +19,16 @@ class MidiProcessor:
     part_indexが指定されている場合は単一パートMIDIを返す
     """
 
-    def __init__(self, midi_path):
-        self.midi_path = midi_path
-        self.midi = MidiFile(midi_path)
+    def __init__(self, midi_input):
+        if isinstance(midi_input, str):
+            self.midi_path = midi_input
+            self.midi = MidiFile(midi_input)
+        elif isinstance(midi_input, MidiFile):
+            self.midi_path = None
+            self.midi = midi_input
+        else:
+            raise TypeError("midi_input must be a file path (str) or a Mido MidiFile object.")
+
         self.ticks_per_beat = self.midi.ticks_per_beat
         self.tempo = self._get_first_tempo()
 
@@ -255,7 +262,10 @@ class MidiProcessor:
         peak_cc2 = int(preset_params.get('peak_cc2', 0))
         onset_ms = int(preset_params.get('onset_ms', 0))
         
-        midi_copy = copy.deepcopy(MidiFile(self.midi_path))
+        midi_copy = copy.deepcopy(self.midi)
+
+        if start_tick is None or end_tick is None or peak_tick is None:
+             return midi_copy
 
         if start_tick > end_tick:
             start_tick, end_tick = end_tick, start_tick
@@ -276,8 +286,20 @@ class MidiProcessor:
 
         # 単一パートにCC#2とベロシティの変更を適用
         if target_idx is not None:
-            self.interpolate_cc2_with_even_ticks(tr, start_tick, end_tick, peak_tick, start_expr, peak_expr, end_expr)
-            self.adjust_velocity_based_on_expression(tr)
+            self.interpolate_cc2_with_even_ticks(midi_copy.tracks[target_idx], start_tick, end_tick, peak_tick, start_expr, peak_expr, end_expr)
+            self.adjust_velocity_based_on_expression(midi_copy.tracks[target_idx])
+        # part_index が None の場合は、全トラックに表情付けを行う
+        else:
+            for track in midi_copy.tracks:
+                # ここではnoteを持つトラックのみを対象とするのが一般的
+                is_note_track = any(msg.type in ('note_on', 'note_off') for msg in track)
+                if is_note_track:
+                    orig_expr_track = self.get_base_cc2_value(track, start_tick, end_tick)
+                    start_expr_track = max(0, min(127, int(orig_expr_track + base_cc2)))
+                    peak_expr_track = max(0, min(127, int(orig_expr_track + peak_cc2)))
+                    end_expr_track = start_expr_track
+                    self.interpolate_cc2_with_even_ticks(track, start_tick, end_tick, peak_tick, start_expr_track, peak_expr_track, end_expr_track)
+                    self.adjust_velocity_based_on_expression(track)
 
         # 全トラックに発音タイミング変更を適用
         for tr in midi_copy.tracks:
@@ -288,11 +310,13 @@ class MidiProcessor:
             single_midi = MidiFile(ticks_per_beat=midi_copy.ticks_per_beat)
             single_midi.tracks.append(copy.deepcopy(midi_copy.tracks[target_idx]))
             # テンポ情報をトラックの先頭にコピー
-            for tr in midi_copy.tracks:
+            for tr in self.midi.tracks: # テンポは元のMIDIから探す
                 for msg in tr:
                     if msg.type == "set_tempo":
                         single_midi.tracks[0].insert(0, msg.copy(time=0))
                         break
+                else: continue
+                break
             return single_midi
 
         return midi_copy
@@ -315,7 +339,7 @@ class MidiProcessor:
     def save_single_part_to_file(self, part_index, out_path):
         # 元のMIDIファイルから指定パートだけを抜き出して保存する
         try:
-            midi_obj = MidiFile(self.midi_path)
+            midi_obj = self.midi
             if part_index < 0 or part_index >= len(midi_obj.tracks):
                 print(f"⚠️ 無効なpart_index: {part_index}")
                 return

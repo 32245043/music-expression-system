@@ -65,10 +65,12 @@
                         <p>終了: <span id="end-note-info">未選択</span></p>
                     </div>
 
-                    <button id="reset-selection-btn">選択範囲をリセット</button>
-                    
-                    <!-- ★★★ ここに「すべての加工をリセット」ボタンを追加 ★★★ -->
-                    <button id="reset-midi-btn" style="background-color: #dc3545; margin-top: 10px;">すべての加工をリセット</button>
+                    <div style="display: grid; gap: 10px;">
+                        <button id="reset-selection-btn">選択範囲をリセット</button>
+                        <button id="undo-btn" style="background-color: #ffc107; color: #212529;">一つ前の操作に戻る</button>
+                        <button id="reset-midi-btn" style="background-color: #dc3545;">すべての加工をリセット</button>
+                    </div>
+
                 </div>
 
                 <!-- 4: 表現プリセット -->
@@ -86,8 +88,13 @@
                 <div class="card">
                     <h2>5. 適用と再生</h2>
                     <p>設定が完了したら、下のボタンを押してください。</p>
-                    <p style="font-size: 0.9em; color: #555;">MIDIの加工ができると下の聴き比べエリアが緑に光ります</p>
-                    <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
+                    <p style="font-size: 0.9em; color: #555;">生成が完了すると下の聴き比べエリアが緑に光ります</p>
+
+                    <div class="apply-button-container">
+                        <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
+                        <!-- ↓ これが「くるくる回るヤツ」の本体 ↓ -->
+                        <div id="loading-spinner" class="loader hidden"></div>
+                    </div>
                     
                     <!-- 🎧 聴き比べボタン群 -->
                     <div id="compare-container" style="margin-top: 15px; display:none;">

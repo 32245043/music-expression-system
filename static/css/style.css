@@ -123,18 +123,14 @@ button:disabled {
     background-color: #5a6268;
 }
 
-/* ============================================= */
-/* ★★★ 変更点 ① ★★★ */
-/* 聴き比べボタンのデフォルトスタイルを白っぽくする */
-/* ============================================= */
 .compare-block button {
-    background-color: #f8f9fa; /* 白っぽい背景色 */
-    color: #495057; /* 暗めの文字色 */
-    border: 1px solid #ced4da; /* 境界線 */
-    font-weight: normal; /* 太字を解除 */
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+    font-weight: normal;
 }
 .compare-block button:hover:not(:disabled) {
-    background-color: #e2e6ea; /* ホバー時は少し濃いグレーに */
+    background-color: #e2e6ea;
 }
 
 /* ============================================= */
@@ -215,39 +211,74 @@ g.abcjs-note.selected-peak path {
     stroke: #4caf50 !important;
 }
 
-
 .compare-block button.is-playing {
-    background-color: #007bff; /* 再生中の青色 */
+    background-color: #007bff;
     color: white;
     font-weight: bold;
-    border-color: #007bff; /* 境界線の色も合わせる */
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); /* 青い光 */
-    transform: scale(1.03); /* 少しだけ大きくして目立たせる */
+    border-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
+    transform: scale(1.03);
 }
 
-/* style.css の一番下に追加 */
-
-/* ============================================= */
-/* UIフィードバック用のアニメーション                 */
-/* ============================================= */
-
-/* 成功時に緑色に光るアニメーション */
 @keyframes flash-animation {
-  0% {
-    background-color: #ffffff; /* 開始時の色（白） */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  }
-  50% {
-    background-color: #e6ffed; /* 中間点の色（薄い緑） */
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); /* 少し強めの緑の影 */
-  }
-  100% {
-    background-color: #ffffff; /* 終了時の色（白に戻る） */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  }
+  0% { background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
+  50% { background-color: #e6ffed; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); }
+  100% { background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
 }
 
-/* 聴き比べエリアに適用するクラス */
 #compare-container.flash-success {
     animation: flash-animation 1.5s ease-out;
+}
+
+.expression-text {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 15px;
+    font-style: italic;
+    font-weight: normal;
+    fill: #34495e;
+    pointer-events: none;
+}
+
+.phrase-highlight-rect {
+    fill: rgba(76, 175, 80, 0.15); /* うっすら緑色のハイライト */
+    stroke: none;
+    pointer-events: none;
+    rx: 4; /* 角を少し丸くする */
+    ry: 4;
+}
+
+.phrase-peak-highlight {
+    fill: rgba(76, 175, 80, 0.4); /*  通常ハイライト(0.15)より濃い緑 */
+    stroke: none;
+    pointer-events: none;
+    rx: 4;
+    ry: 4;
+}
+
+/* 適用ボタンとスピナーを横並びにするためのコンテナ */
+.apply-button-container {
+    display: flex;
+    align-items: center; /* 上下中央揃え */
+    gap: 15px; /* ボタンとスピナーの間隔 */
+}
+
+/* ローディングスピナー */
+.loader {
+    border: 4px solid #f3f3f3; /* 薄い灰色の円 */
+    border-top: 4px solid #3498db; /* 上だけ青色 */
+    border-radius: 50%; /* 完全な円にする */
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite; /* spinアニメーションを1秒で永遠に繰り返す */
+}
+
+/* アニメーション */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* スピナーを隠す */
+.hidden {
+    display: none !important;
 }
