@@ -65,10 +65,18 @@
                         <p>終了: <span id="end-note-info">未選択</span></p>
                     </div>
 
-                    <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
                         <button id="reset-selection-btn">選択範囲をリセット</button>
-                        <button id="undo-btn" style="background-color: #ffc107; color: #212529;">一つ前の操作に戻る</button>
-                        <button id="reset-midi-btn" style="background-color: #dc3545;">すべての加工をリセット</button>
+                        
+                        <div class="action-button-container">
+                            <button id="undo-btn" style="background-color: #ffc107; color: #212529;">一つ前の操作に戻る</button>
+                            <div id="undo-spinner" class="loader hidden"></div>
+                        </div>
+
+                        <div class="action-button-container">
+                            <button id="reset-midi-btn" style="background-color: #dc3545;">すべての加工をリセット</button>
+                            <div id="reset-spinner" class="loader hidden"></div>
+                        </div>
                     </div>
 
                 </div>
@@ -78,8 +86,13 @@
                     <h2>4. 表現プリセット</h2>
                     <label for="tempo-preset">発想標語プリセット:</label>
                     <select id="tempo-preset">
-                        {% for name, params in presets.tempo_expressions.items() %}
-                        <option value="{{ name }}">{{ name }}</option>
+                        {% for name, data in presets.tempo_expressions.items() %}
+                        <option value="{{ name }}">
+                            {{ name }}
+                            {% if data.meaning and data.meaning != "" %}
+                                ：{{ data.meaning }}
+                            {% endif %}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -90,9 +103,8 @@
                     <p>設定が完了したら、下のボタンを押してください。</p>
                     <p style="font-size: 0.9em; color: #555;">生成が完了すると下の聴き比べエリアが緑に光ります</p>
 
-                    <div class="apply-button-container">
+                    <div class="action-button-container">
                         <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
-                        <!-- ↓ これが「くるくる回るヤツ」の本体 ↓ -->
                         <div id="loading-spinner" class="loader hidden"></div>
                     </div>
                     
@@ -100,17 +112,14 @@
                     <div id="compare-container" style="margin-top: 15px; display:none;">
                         <h3>🎧 聴き比べ</h3>
                         <p style="font-size: 0.9em; color: #555;">加工前後・単一パート／全体を聴き比べできます。</p>
-
                         <div class="compare-block">
                             <button onclick="playWAV('original_single', this)">🎵 単一パート（元）再生</button>
                             <button onclick="playWAV('processed_single', this)">🎶 単一パート（加工後）再生</button>
                         </div>
-
                         <div class="compare-block">
                             <button onclick="playWAV('original_full', this)">🎵 全体（元）再生</button>
                             <button onclick="playWAV('processed_full', this)">🎶 全体（加工後）再生</button>
                         </div>
-
                         <div style="margin-top: 10px;">
                             <button onclick="stopWAV()">⏹ 停止</button>
                         </div>
@@ -121,7 +130,6 @@
                 <div class="card">
                     <h2>6. 保存</h2>
                     <p>加工が完了すると、MIDIファイルを保存できます。</p>
-                    
                     <!-- 保存ボタンのエリア（最初は非表示） -->
                     <div id="save-area" style="display:none;">
                         <button id="save-midi-btn" class="save-btn" style="width: 100%;">💾 加工後MIDIを保存</button> 
@@ -136,10 +144,8 @@
                 <div id="status-message">
                     ここに楽譜が表示されます。左のエリアからファイルを読み込んでください。
                 </div>
-
                 <!-- abcjsによる楽譜描画ターゲット -->
                 <div id="score-display"></div>
-
                 <!-- 楽譜描画に関するステータス表示エリア -->
                 <div id="abc-status" style="margin-top: 10px; color: gray;"></div>
             </div>

@@ -240,45 +240,48 @@ g.abcjs-note.selected-peak path {
 }
 
 .phrase-highlight-rect {
-    fill: rgba(76, 175, 80, 0.15); /* うっすら緑色のハイライト */
-    stroke: none;
-    pointer-events: none;
-    rx: 4; /* 角を少し丸くする */
-    ry: 4;
-}
-
-.phrase-peak-highlight {
-    fill: rgba(76, 175, 80, 0.4); /*  通常ハイライト(0.15)より濃い緑 */
+    fill: rgba(76, 175, 80, 0.15);
     stroke: none;
     pointer-events: none;
     rx: 4;
     ry: 4;
 }
 
-/* 適用ボタンとスピナーを横並びにするためのコンテナ */
-.apply-button-container {
-    display: flex;
-    align-items: center; /* 上下中央揃え */
-    gap: 15px; /* ボタンとスピナーの間隔 */
+.phrase-peak-highlight {
+    fill: rgba(76, 175, 80, 0.4);
+    stroke: none;
+    pointer-events: none;
+    rx: 4;
+    ry: 4;
 }
 
+/* ============================================= */
 /* ローディングスピナー */
+/* ============================================= */
+.action-button-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.action-button-container button {
+    flex-grow: 1;
+}
+
 .loader {
-    border: 4px solid #f3f3f3; /* 薄い灰色の円 */
-    border-top: 4px solid #3498db; /* 上だけ青色 */
-    border-radius: 50%; /* 完全な円にする */
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
     width: 20px;
     height: 20px;
-    animation: spin 1s linear infinite; /* spinアニメーションを1秒で永遠に繰り返す */
+    animation: spin 1s linear infinite;
 }
 
-/* アニメーション */
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-/* スピナーを隠す */
 .hidden {
     display: none !important;
 }

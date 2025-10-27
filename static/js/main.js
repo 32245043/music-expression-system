@@ -47,12 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
         history.forEach(instruction => {
             const phrase = instruction.phrase;
             const presetName = instruction.preset_name;
-
             const startNoteEl = allNoteElements[phrase.start_index];
             const endNoteEl = allNoteElements[phrase.end_index];
-            const peakNoteEl = allNoteElements[phrase.peak_index]; // ★ 頂点音符を取得
+            const peakNoteEl = allNoteElements[phrase.peak_index];
 
-            if (startNoteEl && endNoteEl && peakNoteEl) { // ★ 頂点音符もチェック
+            if (startNoteEl && endNoteEl && peakNoteEl) {
                 const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 group.classList.add('decoration-group');
                 const svgRect = scoreSVG.getBoundingClientRect();
@@ -82,12 +81,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 // === 2. 頂点音符のハイライトを重ねて描画 ===
                 const peakRect = peakNoteEl.getBoundingClientRect();
                 const peakHighlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                const padding = 2; // 少しだけはみ出すように調整
+                const padding = 2;
                 peakHighlight.setAttribute("x", peakRect.left - svgRect.left - padding);
                 peakHighlight.setAttribute("y", peakRect.top - svgRect.top - padding);
                 peakHighlight.setAttribute("width", peakRect.width + (padding * 2));
                 peakHighlight.setAttribute("height", peakRect.height + (padding * 2));
-                peakHighlight.classList.add('phrase-peak-highlight'); // 新しいCSSクラス
+                peakHighlight.classList.add('phrase-peak-highlight');
                 group.appendChild(peakHighlight);
 
                 // === 3. 発想標語のテキストを描画 ===
@@ -111,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const firstNoteRect = noteElements[0].getBoundingClientRect();
         const lastNoteRect = noteElements[noteElements.length - 1].getBoundingClientRect();
         const padding = 5;
-
         const rectEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         rectEl.setAttribute("x", firstNoteRect.left - svgRect.left - padding);
         rectEl.setAttribute("y", firstNoteRect.top - svgRect.top - padding);
@@ -127,14 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
             statusMessage.textContent = `⚠️ エラー: ${result.error}`;
             throw new Error(result.error);
         }
-        
         if (result.message) {
              alert(result.message);
              statusMessage.textContent = `✅ ${result.message}`;
         }
-        
         window.lastFlaskResponse = result;
-
         if (result.history_empty) {
             compareContainer.style.display = "none";
             saveArea.style.display = "none";
@@ -201,21 +196,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // ============================================
     function renderScore(abcText) {
         scoreDisplay.innerHTML = "";
-        ABCJS.renderAbc("score-display", abcText, {
-            add_classes: true,
-            staffwidth: 900,
-            clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
-                const clickedEl = mouseEvent.target.closest(".abcjs-note");
-                if (clickedEl) {
-                    handleNoteClick(clickedEl);
-                }
-            }
-        });
-        
-        setTimeout(() => {
-            updateScoreDecorations(window.lastFlaskResponse?.history);
-        }, 200);
-
+        ABCJS.renderAbc("score-display", abcText, { add_classes: true, staffwidth: 900, clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
+            const clickedEl = mouseEvent.target.closest(".abcjs-note");
+            if (clickedEl) handleNoteClick(clickedEl);
+        }});
+        setTimeout(() => { updateScoreDecorations(window.lastFlaskResponse?.history); }, 200);
         statusMessage.textContent = "✅ 音符をクリックして範囲を指定できます。";
     }
 
@@ -239,8 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5️. UI更新
     // ============================================
     function updateSelectionUI() {
-        document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak")
-            .forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
+        document.querySelectorAll(".abcjs-note.selected, .abcjs-note.selected-end, .abcjs-note.selected-peak").forEach(el => el.classList.remove("selected", "selected-end", "selected-peak"));
         if (selectedNotes.start?.el) selectedNotes.start.el.classList.add("selected");
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
@@ -261,6 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     undoBtn.addEventListener("click", async () => {
+        const undoSpinner = document.getElementById("undo-spinner");
+        undoSpinner.classList.remove("hidden");
+        undoBtn.disabled = true;
+        resetMidiBtn.disabled = true;
         statusMessage.textContent = "⏳ 元に戻しています...";
         try {
             const res = await fetch("/undo", { method: "POST" });
@@ -269,11 +257,19 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ Undoエラー: ${err.message}`;
+        } finally {
+            undoSpinner.classList.add("hidden");
+            undoBtn.disabled = false;
+            resetMidiBtn.disabled = false;
         }
     });
 
     resetMidiBtn.addEventListener("click", async () => {
         if (!confirm("本当にすべての加工をリセットしますか？この操作は元に戻せません。")) return;
+        const resetSpinner = document.getElementById("reset-spinner");
+        resetSpinner.classList.remove("hidden");
+        resetMidiBtn.disabled = true;
+        undoBtn.disabled = true;
         statusMessage.textContent = "⏳ リセット中...";
         try {
             const res = await fetch("/reset_midi", { method: "POST" });
@@ -282,6 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ リセットエラー: ${err.message}`;
+        } finally {
+            resetSpinner.classList.add("hidden");
+            resetMidiBtn.disabled = false;
+            undoBtn.disabled = false;
         }
     });
 
@@ -293,25 +293,16 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("開始・終了・頂点を順に選択してください。");
             return;
         }
-        
         const loadingSpinner = document.getElementById("loading-spinner");
-
-        // --- 処理開始 ---
-        loadingSpinner.classList.remove("hidden"); // スピナーを表示
-        applyBtn.disabled = true; // ボタンを無効化
+        loadingSpinner.classList.remove("hidden");
+        applyBtn.disabled = true;
         statusMessage.textContent = "⏳ MIDIを加工してWAVを生成中...";
-
         try {
             const partIndex = currentPartIndex;
-            const phraseInfo = {
-                start_index: selectedNotes.start.index,
-                end_index: selectedNotes.end.index,
-                peak_index: selectedNotes.peak.index
-            };
+            const phraseInfo = { start_index: selectedNotes.start.index, end_index: selectedNotes.end.index, peak_index: selectedNotes.peak.index };
             const tempoSelection = tempoPreset.value;
-            const presetParams = PRESETS.tempo_expressions[tempoSelection];
+            const presetParams = PRESETS.tempo_expressions[tempoSelection].params;
             const partName = partSelector.selectedOptions[0].textContent;
-
             const res = await fetch("/process", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -319,14 +310,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const result = await res.json();
             handleServerResponse(result);
-
         } catch (err) {
             console.error(err);
             statusMessage.textContent = `⚠️ エラー: ${err.message}`;
         } finally {
-            // --- 処理終了（成功でも失敗でも実行） ---
-            loadingSpinner.classList.add("hidden"); // スピナーを隠す
-            // 選択が完了している場合のみボタンを有効に戻す
+            loadingSpinner.classList.add("hidden");
             applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
         }
     });
@@ -370,7 +358,6 @@ function playWAV(type, clickedButton) {
         else if (type === "processed_full") wavUrl = window.lastFlaskResponse?.processed_full_wav;
         else if (type === "original_full") wavUrl = window.lastFlaskResponse?.original_full_wav;
         if (!wavUrl) return;
-
         const cacheBustingUrl = `${wavUrl}?v=${new Date().getTime()}`;
         document.querySelectorAll('.compare-block button').forEach(btn => btn.classList.remove('is-playing'));
         if (window.currentAudio) {

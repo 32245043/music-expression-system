@@ -46,17 +46,39 @@ app.config.update(
 # ============================================================
 PRESET_DEFINITIONS = {
     "tempo_expressions": {
-        "なし": {"base_cc2": 0, "peak_cc2": 0},
-        "Cantabile": {"base_cc2": 10, "peak_cc2": 30},
-        "Dolce": {"base_cc2": -20, "peak_cc2": -5},
-        "Maestoso": {"base_cc2": 10, "peak_cc2": 40},
-        "Appassionato": {"base_cc2": 10, "peak_cc2": 35, "onset_ms": -10},
-        "Con brio": {"base_cc2": 10, "peak_cc2": 25, "onset_ms": -30},
-        "Leggiero": {"base_cc2": -10, "peak_cc2": 5, "onset_ms": -10},
-        "Tranquillo": {"base_cc2": -20, "peak_cc2": -10, "onset_ms": -20},
-        "Risoluto": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10},
-        "Sostenuto": {"base_cc2": 0, "peak_cc2": 10, "onset_ms": 30},
-        "Marcato": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": 0},
+        "なし": {
+            "params": {"base_cc2": 0, "peak_cc2": 0}, "meaning": ""
+        },
+        "Cantabile": {
+            "params": {"base_cc2": 10, "peak_cc2": 30}, "meaning": "歌うように"
+        },
+        "Dolce": {
+            "params": {"base_cc2": -20, "peak_cc2": -5}, "meaning": "甘く、柔らかく"
+        },
+        "Maestoso": {
+            "params": {"base_cc2": 10, "peak_cc2": 40}, "meaning": "荘厳に、堂々と"
+        },
+        "Appassionato": {
+            "params": {"base_cc2": 10, "peak_cc2": 35, "onset_ms": -10}, "meaning": "情熱的に"
+        },
+        "Con brio": {
+            "params": {"base_cc2": 10, "peak_cc2": 25, "onset_ms": -30}, "meaning": "生き生きと"
+        },
+        "Leggiero": {
+            "params": {"base_cc2": -10, "peak_cc2": 5, "onset_ms": -10}, "meaning": "軽く、軽快に"
+        },
+        "Tranquillo": {
+            "params": {"base_cc2": -20, "peak_cc2": -10, "onset_ms": -20}, "meaning": "静かに、穏やかに"
+        },
+        "Risoluto": {
+            "params": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10}, "meaning": "決然と、きっぱりと"
+        },
+        "Sostenuto": {
+            "params": {"base_cc2": 0, "peak_cc2": 10, "onset_ms": 30}, "meaning": "音を十分に保って"
+        },
+        "Marcato": {
+            "params": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": 0}, "meaning": "一つ一つの音をはっきりと"
+        },
     }
 }
 
