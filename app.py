@@ -3,12 +3,13 @@ import subprocess
 import shutil
 import json
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, session
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 import music21
 from midi_processor import MidiProcessor  
 from mido import MidiFile, MidiTrack
 import copy
+import threading
 
 # ============================================================
 # アプリケーション設定
@@ -141,67 +142,75 @@ def generate_midi_from_history():
 
     return current_midi_obj
 
-def _create_output_files_and_response(latest_midi_obj, part_index, part_name):
+def run_fluidsynth_in_background(commands):
+    """fluidsynthのコマンドリストを受け取り、サブプロセスで実行する"""
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            app.logger.info(f"Background WAV generation succeeded for: {cmd[-2]}")
+        except subprocess.CalledProcessError as e:
+            app.logger.error(f"Background WAV generation failed for: {cmd[-2]}. Error: {e.stderr}")
+        except Exception as e:
+            app.logger.error(f"An unexpected error occurred during background WAV generation: {e}")
+
+# ============================================================
+# 共通バックグラウンド処理関数
+# ============================================================
+def process_in_background(midi_obj, part_index, part_name, message):
     song_name = session.get("song_name")
     safe_part_name = safe_name(part_name)
-
-    single_processed_dir = os.path.join(OUTPUT_DIRS["midi_single"], "processed")
+    
+    # MIDIファイルの保存
     full_processed_dir = os.path.join(OUTPUT_DIRS["midi_full"], "processed")
-    single_original_dir = os.path.join(OUTPUT_DIRS["midi_single"], "original")
-    full_original_dir = os.path.join(OUTPUT_DIRS["midi_full"], "original")
-    for d in [single_processed_dir, full_processed_dir, single_original_dir, full_original_dir]:
-        os.makedirs(d, exist_ok=True)
-
+    single_processed_dir = os.path.join(OUTPUT_DIRS["midi_single"], "processed")
+    os.makedirs(full_processed_dir, exist_ok=True)
+    os.makedirs(single_processed_dir, exist_ok=True)
     full_out_path = os.path.join(full_processed_dir, f"{song_name}_full_processed.mid")
-    latest_midi_obj.save(full_out_path)
-
-    single_midi = MidiFile(ticks_per_beat=latest_midi_obj.ticks_per_beat)
-    if 0 <= part_index < len(latest_midi_obj.tracks):
-        track_copy = copy.deepcopy(latest_midi_obj.tracks[part_index])
-        single_midi.tracks.append(track_copy)
-    else:
-        single_midi.tracks.append(MidiTrack())
+    midi_obj.save(full_out_path)
+    single_midi = MidiFile(ticks_per_beat=midi_obj.ticks_per_beat)
+    if 0 <= part_index < len(midi_obj.tracks):
+        single_midi.tracks.append(copy.deepcopy(midi_obj.tracks[part_index]))
     single_out_path = os.path.join(single_processed_dir, f"{song_name}_{safe_part_name}_processed.mid")
     single_midi.save(single_out_path)
-    
-    original_processor = MidiProcessor(session['original_midi_path'])
+
+    # オリジナル音源がなければ生成
+    single_original_dir = os.path.join(OUTPUT_DIRS["midi_single"], "original")
     original_single_out = os.path.join(single_original_dir, f"{song_name}_{safe_part_name}_original.mid")
     if not os.path.exists(original_single_out):
-        original_processor.save_single_part_to_file(part_index, original_single_out)
+        os.makedirs(os.path.dirname(original_single_out), exist_ok=True)
+        MidiProcessor(session['original_midi_path']).save_single_part_to_file(part_index, original_single_out)
+    full_original_dir = os.path.join(OUTPUT_DIRS["midi_full"], "original")
     original_full_out = os.path.join(full_original_dir, f"{song_name}_full_original.mid")
     if not os.path.exists(original_full_out):
+        os.makedirs(os.path.dirname(original_full_out), exist_ok=True)
         shutil.copy(session['original_midi_path'], original_full_out)
 
+    # WAV変換の準備と実行
+    audio_root = os.path.join(OUTPUT_FOLDER, "audio")
+    single_audio_processed_path = os.path.join(audio_root, "single_parts", "processed", f"{song_name}_{safe_part_name}_processed.wav")
+    processed_wav_full_path = os.path.join(audio_root, "full_parts", "processed", f"{song_name}_full_processed.wav")
+    if os.path.exists(single_audio_processed_path): os.remove(single_audio_processed_path)
+    if os.path.exists(processed_wav_full_path): os.remove(processed_wav_full_path)
+    
     fluidsynth_exe = r"C:\tools\fluidsynth\bin\fluidsynth.exe"
     soundfont_path = r"soundfonts\FluidR3_GM.sf2"
-    audio_root = os.path.join(OUTPUT_FOLDER, "audio")
-    
-    single_audio_processed = os.path.join(audio_root, "single_parts", "processed", f"{song_name}_{safe_part_name}_processed.wav")
-    original_wav_single = os.path.join(audio_root, "single_parts", "original", f"{song_name}_{safe_part_name}_original.wav")
-    processed_wav_full = os.path.join(audio_root, "full_parts", "processed", f"{song_name}_full_processed.wav")
-    original_wav_full = os.path.join(audio_root, "full_parts", "original", f"{song_name}_full_original.wav")
+    cmd_single = [fluidsynth_exe, "-ni", soundfont_path, single_out_path, "-F", single_audio_processed_path, "-r", "44100"]
+    cmd_full = [fluidsynth_exe, "-ni", soundfont_path, full_out_path, "-F", processed_wav_full_path, "-r", "44100"]
+    thread = threading.Thread(target=run_fluidsynth_in_background, args=([cmd_single, cmd_full],))
+    thread.start()
 
-    for d in [os.path.dirname(single_audio_processed), os.path.dirname(original_wav_single), os.path.dirname(processed_wav_full), os.path.dirname(original_wav_full)]:
-        os.makedirs(d, exist_ok=True)
-    
-    try:
-        subprocess.run([fluidsynth_exe, "-ni", soundfont_path, single_out_path, "-F", single_audio_processed, "-r", "44100"], check=True, capture_output=True)
-        subprocess.run([fluidsynth_exe, "-ni", soundfont_path, full_out_path, "-F", processed_wav_full, "-r", "44100"], check=True, capture_output=True)
-        if not os.path.exists(original_wav_single):
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_single_out, "-F", original_wav_single, "-r", "44100"], check=True, capture_output=True)
-        if not os.path.exists(original_wav_full):
-            subprocess.run([fluidsynth_exe, "-ni", soundfont_path, original_full_out, "-F", original_wav_full, "-r", "44100"], check=True, capture_output=True)
-    except Exception as e:
-        app.logger.error(f"WAV生成エラー: {e}")
-
-    response = {
-        "original_single_wav": f"/output/audio/single_parts/original/{os.path.basename(original_wav_single)}",
-        "processed_single_wav": f"/output/audio/single_parts/processed/{os.path.basename(single_audio_processed)}",
-        "original_full_wav": f"/output/audio/full_parts/original/{os.path.basename(original_wav_full)}",
-        "processed_full_wav": f"/output/audio/full_parts/processed/{os.path.basename(processed_wav_full)}",
-        "history": session.get('history', [])
-    }
-    return response
+    # 即時レスポンスを返す
+    return jsonify({
+        'message': message,
+        'history': session.get('history', []),
+        'status': 'processing',
+        'processed_single_wav': url_for('serve_output', filename=os.path.relpath(single_audio_processed_path, OUTPUT_FOLDER).replace(os.sep, '/')),
+        'processed_full_wav': url_for('serve_output', filename=os.path.relpath(processed_wav_full_path, OUTPUT_FOLDER).replace(os.sep, '/')),
+        'original_single_wav': url_for('serve_output', filename=f"audio/single_parts/original/{song_name}_{safe_part_name}_original.wav"),
+        'original_full_wav': url_for('serve_output', filename=f"audio/full_parts/original/{song_name}_full_original.wav"),
+        "can_undo": len(session.get('history', [])) > 0,
+        "can_redo": len(session.get('redo_stack', [])) > 0,
+    })
 
 # ============================================================
 # 生成ファイルの配信ルート
@@ -250,6 +259,7 @@ def upload_files():
     session['original_midi_path'] = original_midi_path
     session['song_name'] = song_name
     session['history'] = []
+    session['redo_stack'] = []
 
     try:
         score = music21.converter.parse(original_xml_path)
@@ -283,7 +293,10 @@ def upload_files():
         return jsonify({
             'message': f'ファイルが正常にアップロードされました（連番: {counter}）',
             'parts': parts_info,
-            'all_abc_data': all_abc_data
+            'all_abc_data': all_abc_data,
+            'history': [],
+            'can_undo': False,
+            'can_redo': False,
         })
     except Exception as e:
         app.logger.exception("Upload error")
@@ -294,111 +307,95 @@ def upload_files():
 # ============================================================
 @app.route('/process', methods=['POST'])
 def process_midi():
-    if 'original_midi_path' not in session:
-        return jsonify({'error': 'MIDIファイルがアップロードされていません。'}), 400
-
     data = request.json
     part_index = data.get('partIndex')
     part_name = data.get('partName')
     phrase_info = data.get('phrase')
-    preset_params = data.get('presetParams')
-    preset_name = data.get('presetName')
     
-    if any(v is None for v in [part_index, part_name, phrase_info, preset_params, preset_name]):
-        return jsonify({'error': '処理に必要なデータが不足しています。'}), 400
-
-    history = session.get('history', [])
-    song_name = session.get("song_name")
-    
-    note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{song_name}_{safe_name(part_name)}_note_map.json")
-    if not os.path.exists(note_map_path):
-        return jsonify({'error': f'note_mapが見つかりません: {note_map_path}'}), 404
-
     new_instruction = {
         'phrase': phrase_info,
-        'preset_params': preset_params,
-        'preset_name': preset_name,
+        'preset_params': data.get('presetParams'),
+        'preset_name': data.get('presetName'),
         'part_index': part_index,
         'part_name': part_name,
-        'note_map_path': note_map_path
+        'note_map_path': os.path.join(OUTPUT_DIRS["json"], f"{session.get('song_name')}_{safe_name(part_name)}_note_map.json")
     }
-    
-    found_index = -1
-    for i, instruction in enumerate(history):
-        if instruction['phrase'] == new_instruction['phrase']:
-            found_index = i
-            break
+    history = session.get('history', [])
+    found_index = next((i for i, instr in enumerate(history) if instr['phrase'] == new_instruction['phrase']), -1)
     if found_index != -1:
         history[found_index] = new_instruction
     else:
         history.append(new_instruction)
     session['history'] = history
-
-    try:
-        latest_midi_obj = generate_midi_from_history()
-        if latest_midi_obj is None:
-            return jsonify({'error': 'MIDIの生成に失敗しました。'}), 500
-        
-        response_data = _create_output_files_and_response(latest_midi_obj, part_index, part_name)
-        response_data['message'] = '表現を適用しました。'
-        return jsonify(response_data)
-    except Exception as e:
-        app.logger.exception("Process error")
-        return jsonify({'error': f'MIDI処理エラー: {e}'}), 500
+    session['redo_stack'] = []
+    
+    latest_midi_obj = generate_midi_from_history()
+    return process_in_background(latest_midi_obj, part_index, part_name, '表現を適用しました。')
 
 # ============================================================
-# Undo・Resetルート
+# 音声ファイル存在確認
+# ============================================================
+@app.route('/check_audio_status', methods=['POST'])
+def check_audio_status():
+    files_to_check = request.json.get('files', [])
+    all_files_exist = all(os.path.exists(os.path.join(OUTPUT_FOLDER, f.replace('/output/', '', 1).replace('/', os.sep))) for f in files_to_check)
+    return jsonify({'status': 'ready' if all_files_exist else 'processing'})
+
+# ============================================================
+# Undo・Redo・Resetルート
 # ============================================================
 @app.route('/undo', methods=['POST'])
 def undo_last_action():
     history = session.get('history', [])
     if not history:
-        return jsonify({'message': '元に戻す操作はありません。', 'history_empty': True, 'history': []})
-
-    undone_action = history.pop()
-    session['history'] = history
+        return jsonify({'message': '元に戻す操作はありません。', 'history': [], 'can_undo': False, 'can_redo': len(session.get('redo_stack', [])) > 0})
     
-    try:
-        latest_midi_obj = generate_midi_from_history() if history else MidiFile(session['original_midi_path'])
-        
-        part_index = undone_action['part_index']
-        part_name = undone_action['part_name']
-        response_data = _create_output_files_and_response(latest_midi_obj, part_index, part_name)
-        response_data['message'] = '最後の操作を元に戻しました。'
-        return jsonify(response_data)
-    except Exception as e:
-        app.logger.exception("Undo error")
-        return jsonify({'error': f'Undo処理エラー: {e}'}), 500
+    redo_stack = session.get('redo_stack', [])
+    undone_action = history.pop()
+    redo_stack.append(undone_action)
+    session['history'] = history
+    session['redo_stack'] = redo_stack
+
+    latest_midi_obj = generate_midi_from_history() if history else MidiFile(session['original_midi_path'])
+    return process_in_background(latest_midi_obj, undone_action['part_index'], undone_action['part_name'], '操作を元に戻しました。')
+
+@app.route('/redo', methods=['POST'])
+def redo_action():
+    redo_stack = session.get('redo_stack', [])
+    if not redo_stack:
+        return jsonify({'message': 'やり直す操作はありません。', 'history': session.get('history', []), 'can_undo': len(session.get('history', [])) > 0, 'can_redo': False})
+
+    history = session.get('history', [])
+    redone_action = redo_stack.pop()
+    history.append(redone_action)
+    session['history'] = history
+    session['redo_stack'] = redo_stack
+    
+    latest_midi_obj = generate_midi_from_history()
+    return process_in_background(latest_midi_obj, redone_action['part_index'], redone_action['part_name'], '操作をやり直しました。')
 
 @app.route('/reset_midi', methods=['POST'])
 def reset_midi():
-    if 'history' in session:
-        session['history'] = []
-        try:
-            latest_midi_obj = MidiFile(session['original_midi_path'])
-            # リセット時は特定のパートがないので、ダミー値（最初のパート）でファイル生成
-            score = music21.converter.parse(session['xml_path'])
-            part_index = 0
-            part_name = score.parts[0].partName or "Part1"
-            response_data = _create_output_files_and_response(latest_midi_obj, part_index, part_name)
-            response_data['message'] = 'すべての加工をリセットしました。'
-            return jsonify(response_data)
-        except Exception as e:
-            app.logger.exception("Reset error")
-            return jsonify({'error': f'Reset処理エラー: {e}'}), 500
+    if 'original_midi_path' not in session:
+        return jsonify({'error': 'セッションが見つかりません。'})
 
-    return jsonify({'error': 'リセット対象のセッションが見つかりません。'})
+    session['history'] = []
+    session['redo_stack'] = []
+    
+    latest_midi_obj = MidiFile(session['original_midi_path'])
+    score = music21.converter.parse(session['xml_path'])
+    part_index = 0
+    part_name = score.parts[0].partName or "Part1"
+    
+    return process_in_background(latest_midi_obj, part_index, part_name, 'すべての加工をリセットしました。')
 
 # ============================================================
-# WAV配信ルート
+# WAV・MIDI配信ルート
 # ============================================================
 @app.route("/audio/<path:filename>")
 def serve_audio(filename):
     return send_from_directory(os.path.join(OUTPUT_FOLDER, "audio"), filename)
 
-# ============================================================
-# MIDI配信ルート
-# ============================================================
 @app.route("/midi/<path:filename>")
 def serve_midi(filename):
     return send_from_directory(os.path.join(OUTPUT_FOLDER, "midi"), filename)

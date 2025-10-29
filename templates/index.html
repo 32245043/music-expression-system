@@ -68,13 +68,19 @@
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <button id="reset-selection-btn">選択範囲をリセット</button>
                         
-                        <div class="action-button-container">
-                            <button id="undo-btn" style="background-color: #ffc107; color: #212529;">一つ前の操作に戻る</button>
-                            <div id="undo-spinner" class="loader hidden"></div>
+                        <div class="history-controls">
+                             <div class="action-button-container">
+                                <button id="undo-btn" disabled>一つ前に戻る</button>
+                                <div id="undo-spinner" class="loader hidden"></div>
+                            </div>
+                             <div class="action-button-container">
+                                <button id="redo-btn" disabled>やり直す</button>
+                                <div id="redo-spinner" class="loader hidden"></div>
+                            </div>
                         </div>
 
                         <div class="action-button-container">
-                            <button id="reset-midi-btn" style="background-color: #dc3545;">すべての加工をリセット</button>
+                            <button id="reset-midi-btn" style="background-color: #dc3545;" disabled>すべての加工をリセット</button>
                             <div id="reset-spinner" class="loader hidden"></div>
                         </div>
                     </div>
