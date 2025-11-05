@@ -67,7 +67,7 @@ class MidiProcessor:
             measure_offset = m.offset
             measure_number = getattr(m, 'measureNumber', None)
             # 小節内の全ての音符・休符を再帰的に取得
-            for elem in m.recurse().notes:
+            for elem in m.recurse().notesAndRests:
                 note_offset_in_measure = getattr(elem, 'offset', 0.0)
                 global_offset_quarters = measure_offset + note_offset_in_measure
                 duration_quarters = getattr(elem, 'quarterLength', 0.0)
@@ -77,13 +77,24 @@ class MidiProcessor:
                 seconds_ms = seconds * 1000.0
                 tick = self.beat_to_tick(global_offset_quarters)
 
+                # 音の高さ(MIDIノート番号)を取得。休符の場合はNone
+                pitch_midi = None
+                if elem.isNote:
+                    pitch_midi = elem.pitch.midi
+                
+                # 音符の秒単位の長さを計算
+                duration_seconds = duration_quarters * quarter_sec
+                
                 note_map.append({
                     "index": idx,
                     "measure": int(measure_number) if measure_number is not None else None,
                     "offset_beats": float(global_offset_quarters),
                     "duration_beats": float(duration_quarters),
+                    "duration_seconds": float(duration_seconds), # 秒単位の長さを追加
                     "seconds_ms": float(round(seconds_ms, 3)),
-                    "tick": int(tick)
+                    "tick": int(tick),
+                    "pitch": pitch_midi, 
+                    "is_rest": elem.isRest
                 })
                 idx += 1
 

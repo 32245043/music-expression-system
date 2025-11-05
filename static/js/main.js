@@ -182,17 +182,73 @@ document.addEventListener("DOMContentLoaded", () => {
         statusMessage.textContent = "✅ 音符をクリックして範囲を指定できます。";
     }
 
-    function handleNoteClick(clickedEl) {
+    async function handleNoteClick(clickedEl) {
         const noteElements = Array.from(document.querySelectorAll(".abcjs-note"));
         const noteIndex = noteElements.indexOf(clickedEl);
         if (noteIndex === -1) return;
+
+        // 頂点選択モードの時、選択範囲外のクリックは無視する
+        if (selectionMode === 'peak') {
+            const startIndex = selectedNotes.start.index;
+            const endIndex = selectedNotes.end.index;
+            if (noteIndex < startIndex || noteIndex > endIndex) {
+                return;
+            }
+        }
+        
         const noteMap = allNoteMaps[currentPartIndex];
         const tick = noteMap?.[noteIndex]?.tick ?? null;
         const currentMode = selectionMode;
-        const nextMode = (currentMode === "start") ? "end" : (currentMode === "end" ? "peak" : "start");
+        
         selectedNotes[currentMode] = { index: noteIndex, tick, el: clickedEl };
-        selectionMode = nextMode;
+        
+        if (currentMode === 'start') {
+            selectionMode = 'end';
+        } else if (currentMode === 'end') {
+            // 開始・終了が逆なら入れ替える
+            if (selectedNotes.start.index > selectedNotes.end.index) {
+                [selectedNotes.start, selectedNotes.end] = [selectedNotes.end, selectedNotes.start];
+            }
+            selectionMode = 'peak';
+            await fetchApexCandidates();
+        } else if (currentMode === 'peak') {
+            selectionMode = 'start';
+        }
+
         updateSelectionUI();
+    }
+    
+    async function fetchApexCandidates() {
+        statusMessage.textContent = '⏳ 頂点候補を推定中...';
+        document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
+
+        const { start, end } = selectedNotes;
+        if (!start || !end) return;
+
+        try {
+            const res = await fetch('/estimate_apex', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    partName: partSelector.selectedOptions[0].textContent,
+                    startIndex: start.index,
+                    endIndex: end.index
+                })
+            });
+            const result = await res.json();
+            if (result.error) throw new Error(result.error);
+            
+            const noteElements = Array.from(document.querySelectorAll(".abcjs-note"));
+            result.apex_candidates.forEach(index => {
+                if (noteElements[index]) {
+                    noteElements[index].classList.add('apex-candidate');
+                }
+            });
+            statusMessage.textContent = '✅ 黄色の頂点候補から1つ選択してください (候補以外も選択可能です)';
+
+        } catch (err) {
+            statusMessage.textContent = `⚠️ 頂点推定エラー: ${err.message}`;
+        }
     }
 
     function updateSelectionUI() {
@@ -200,16 +256,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectedNotes.start?.el) selectedNotes.start.el.classList.add("selected");
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
+        
         document.getElementById("start-note-info").textContent = selectedNotes.start ? `index=${selectedNotes.start.index}` : "未選択";
-        document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index}` : "未選択";
         document.getElementById("end-note-info").textContent = selectedNotes.end ? `index=${selectedNotes.end.index}` : "未選択";
+        document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index}` : "未選択";
+        
         applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
+        
+        // 頂点選択モードでなければ、候補のハイライトを消す
+        if (selectionMode !== 'peak') {
+            document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
+        }
     }
 
     resetSelectionBtn.addEventListener("click", () => {
         selectionMode = "start";
         selectedNotes = { start: null, end: null, peak: null };
         updateSelectionUI();
+        statusMessage.textContent = "選択をリセットしました。";
     });
 
     async function handleOptimisticUpdate(endpoint, optimisticUpdateFn, spinnerId, requestBody = null) {
@@ -290,12 +354,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const history = window.lastFlaskResponse.history;
             const foundIndex = history.findIndex(instr => JSON.stringify(instr.phrase) === JSON.stringify(newInstruction.phrase));
             if (foundIndex !== -1) {
-                // 同じ範囲を上書きする場合、古いものをRedoスタックに入れる
                  redoStack = [JSON.parse(JSON.stringify(history[foundIndex]))];
                  history[foundIndex] = newInstruction;
             } else {
                  history.push(newInstruction);
-                 redoStack = []; // 新規操作でRedoスタックはクリア
+                 redoStack = [];
             }
             updateScoreDecorations(history);
             statusMessage.textContent = "楽譜に反映しました。音源を生成中です...";

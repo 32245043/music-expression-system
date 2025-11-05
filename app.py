@@ -100,10 +100,8 @@ def convert_with_xml2abc(xml_path, abc_path):
             os.remove(abc_path)
         cmd = ["python", "xml2abc.py", xml_path, "-o", out_dir]
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
         base_name = os.path.splitext(os.path.basename(xml_path))[0]
         generated_path = os.path.join(out_dir, base_name + ".abc")
-
         if os.path.exists(generated_path):
             os.rename(generated_path, abc_path)
             return True
@@ -117,29 +115,21 @@ def generate_midi_from_history():
     original_midi_path = session.get('original_midi_path')
     if not original_midi_path or not os.path.exists(original_midi_path):
         return None
-
     current_midi_obj = MidiFile(original_midi_path)
-
     for instruction in history:
         processor = MidiProcessor(current_midi_obj)
-        
         phrase = instruction['phrase']
         params = instruction['preset_params']
         note_map_path = instruction['note_map_path']
-        
         with open(note_map_path, 'r', encoding='utf-8') as f:
             note_map = json.load(f)
-
         def idx_to_tick(idx):
             entry = next((e for e in note_map if e['index'] == idx), None)
             return entry['tick'] if entry else None
-
         start_tick = idx_to_tick(phrase.get('start_index'))
         peak_tick = idx_to_tick(phrase.get('peak_index'))
         end_tick = idx_to_tick(phrase.get('end_index'))
-        
         current_midi_obj = processor.apply_expression_by_ticks(None, start_tick, end_tick, peak_tick, params)
-
     return current_midi_obj
 
 def run_fluidsynth_in_background(commands):
@@ -238,7 +228,6 @@ def upload_files():
     midi_file = request.files['midi-file']
     if not (xml_file and allowed_file(xml_file.filename) and midi_file and allowed_file(midi_file.filename)):
         return jsonify({'error': '許可されていないファイル形式です'}), 400
-
     xml_filename = secure_filename(xml_file.filename)
     song_name_base = safe_name(os.path.splitext(xml_filename)[0])
     counter = 1
@@ -248,19 +237,16 @@ def upload_files():
             break
         counter += 1
     song_name = f"{song_name_base}_{counter}"
-    
     original_xml_path = os.path.join(UPLOAD_FOLDER, f"{song_name}.musicxml")
     original_midi_path = os.path.join(UPLOAD_FOLDER, f"{song_name}.mid")
     xml_file.save(original_xml_path)
     midi_file.save(original_midi_path)
-    
     session.clear()
     session['xml_path'] = original_xml_path
     session['original_midi_path'] = original_midi_path
     session['song_name'] = song_name
     session['history'] = []
     session['redo_stack'] = []
-
     try:
         score = music21.converter.parse(original_xml_path)
         processor = MidiProcessor(original_midi_path)
@@ -269,38 +255,138 @@ def upload_files():
         for i, part in enumerate(score.parts):
             raw_part_name = part.partName or f"Part{i+1}"
             part_name = safe_name(raw_part_name)
-            
             xml_out_path = os.path.join(OUTPUT_DIRS["musicxml"], f"{song_name}_{part_name}.musicxml")
             abc_out_path = os.path.join(OUTPUT_DIRS["abc"], f"{song_name}_{part_name}.abc")
             note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{song_name}_{part_name}_note_map.json")
-
             part.write('musicxml', fp=xml_out_path)
             processor.create_note_map_from_part(part, note_map_path)
-
             success = convert_with_xml2abc(xml_out_path, abc_out_path)
             if success and os.path.exists(abc_out_path):
                 with open(abc_out_path, 'r', encoding='utf-8', errors='ignore') as f:
                     all_abc_data[i] = f.read()
             else:
                 all_abc_data[i] = f"X:1\nT:{raw_part_name}\nM:4/4\nL:1/8\nK:C\n| CDEC | GFEF |]"
-            
-            parts_info.append({
-                'name': raw_part_name,
-                'index': i,
-                'note_map': f"json/{os.path.basename(note_map_path)}"
-            })
-            
-        return jsonify({
-            'message': f'ファイルが正常にアップロードされました（連番: {counter}）',
-            'parts': parts_info,
-            'all_abc_data': all_abc_data,
-            'history': [],
-            'can_undo': False,
-            'can_redo': False,
-        })
+            parts_info.append({'name': raw_part_name, 'index': i, 'note_map': f"json/{os.path.basename(note_map_path)}"})
+        return jsonify({'message': f'ファイルが正常にアップロードされました（連番: {counter}）', 'parts': parts_info, 'all_abc_data': all_abc_data, 'history': [], 'can_undo': False, 'can_redo': False})
     except Exception as e:
         app.logger.exception("Upload error")
         return jsonify({'error': f'アップロードエラー: {e}'}), 500
+
+# ============================================================
+# 頂点推定API
+# ============================================================
+@app.route('/estimate_apex', methods=['POST'])
+def estimate_apex():
+    data = request.json
+    part_name = data.get('partName')
+    start_index = data.get('startIndex')
+    end_index = data.get('endIndex')
+
+    note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{session.get('song_name')}_{safe_name(part_name)}_note_map.json")
+    if not os.path.exists(note_map_path):
+        return jsonify({'error': 'Note map not found'}), 404
+        
+    with open(note_map_path, 'r', encoding='utf-8') as f:
+        note_map = json.load(f)
+
+    scores = {}
+    phrase_notes = [n for n in note_map if start_index <= n['index'] <= end_index and not n['is_rest']]
+    
+    # --- 論文ルールに基づくスコアリング ---
+    # 最初に同一音価のグループを見つける
+    duration_groups = []
+    if phrase_notes:
+        current_group = [phrase_notes[0]]
+        for i in range(1, len(phrase_notes)):
+            if phrase_notes[i]['duration_beats'] == current_group[0]['duration_beats']:
+                current_group.append(phrase_notes[i])
+            else:
+                duration_groups.append(current_group)
+                current_group = [phrase_notes[i]]
+        duration_groups.append(current_group)
+
+    # 各音符のスコアを初期化
+    for note in phrase_notes:
+        scores[note['index']] = 0
+
+    # ルールを適用してスコアリング
+    for i, note in enumerate(phrase_notes):
+        # --- 音価ルール ---
+        # 1. 隣接する2音の比較
+        if i + 1 < len(phrase_notes):
+            next_note = phrase_notes[i+1]
+            if note['duration_beats'] > next_note['duration_beats']:
+                scores[note['index']] += 1
+        
+        # 2. 同一音価が連続する音群
+        for group in duration_groups:
+            if len(group) > 1 and note['index'] == group[0]['index']:
+                scores[note['index']] += 1
+            if len(group) > 1 and note['index'] in [g['index'] for g in group[1:]]:
+                pos_in_group = [g['index'] for g in group].index(note['index'])
+                scores[note['index']] += (pos_in_group + 1) / len(group)
+
+    # --- 音高ルール ---
+    for i, note in enumerate(phrase_notes):
+        # 1. 隣接する2音の比較
+        if i + 1 < len(phrase_notes):
+            next_note = phrase_notes[i+1]
+            if note['pitch'] > next_note['pitch']:
+                scores[note['index']] += 1
+
+        # 2. 進行到達音 (4音のパターン)
+        if i > 0 and i + 2 < len(phrase_notes):
+            n_minus_1 = phrase_notes[i-1]
+            n = note
+            n_plus_1 = phrase_notes[i+1]
+            n_plus_2 = phrase_notes[i+2]
+            
+            p_m1, p_n, p_p1, p_p2 = n_minus_1['pitch'], n['pitch'], n_plus_1['pitch'], n_plus_2['pitch']
+            
+            dir1 = 1 if p_n > p_m1 else -1 if p_n < p_m1 else 0
+            dir2 = 1 if p_p1 > p_n else -1 if p_p1 < p_n else 0
+            dir3 = 1 if p_p2 > p_p1 else -1 if p_p2 < p_p1 else 0
+
+            target_note = n_plus_1
+            pattern = 0
+            if dir1 >= 0 and dir2 > 0 and dir3 < 0:
+                scores[target_note['index']] += 1
+                pattern = 1
+            elif dir1 < 0 and dir2 > 0 and dir3 < 0:
+                scores[target_note['index']] += 1
+                pattern = 2
+            elif dir1 >= 0 and dir2 < 0 and dir3 > 0:
+                scores[target_note['index']] += 2
+            elif dir1 < 0 and dir2 < 0 and dir3 > 0:
+                scores[target_note['index']] += 2
+
+            if (pattern in [1, 2]) and target_note['duration_seconds'] < 0.25:
+                 scores[n_minus_1['index']] += 1
+
+    # --- ここからデバッグ出力 ---
+    print("\n--- 頂点推定デバッグ情報 ---")
+    print(f"対象パート: {part_name}")
+    print(f"選択範囲インデックス: {start_index} から {end_index}")
+    print("計算されたスコア:")
+    if not scores:
+        print("  スコア計算対象の音符がありません。")
+    else:
+        for index, score in sorted(scores.items()):
+            print(f"  Note Index {index:<3}: Score {score:.2f}")
+    
+    if not scores:
+        max_score = 0
+    else:
+        max_score = max(scores.values())
+    
+    candidates = [index for index, score in scores.items() if score == max_score and max_score > 0]
+    
+    print(f"最高スコア: {max_score:.2f}")
+    print(f"最終的な頂点候補 (インデックス): {candidates}")
+    print("--- デバッグ情報 終了 ---\n")
+    # --- ここまでデバッグ出力 ---
+    
+    return jsonify({'apex_candidates': candidates})
 
 # ============================================================
 # MIDI加工処理
