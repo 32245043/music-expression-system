@@ -13,7 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const partSelector = document.getElementById("part-selector");
     const scoreDisplay = document.getElementById("score-display");
     const statusMessage = document.getElementById("status-message");
-    const applyBtn = document.getElementById("apply-btn");
+    const applyToScoreBtn = document.getElementById("apply-to-score-btn");
+    const generateAudioBtn = document.getElementById("generate-audio-btn");
     const tempoPreset = document.getElementById("tempo-preset");
     const resetSelectionBtn = document.getElementById("reset-selection-btn");
     const resetMidiBtn = document.getElementById("reset-midi-btn");
@@ -28,9 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let allPartAbcData = {};
     let allNoteMaps = {};
     let currentPartIndex = null;
-    window.lastFlaskResponse = { history: [], redo_stack: [] };
+    let history = []; // 適用した操作の履歴
+    let redoStack = []; // Redo用のスタック
     let currentAudio = null;
-    let redoStack = []; // Redo操作をクライアント側で模倣するためのスタック
+    window.lastGeneratedWavPaths = {}; // 生成されたWAVのパスを保持
 
     /**
      * 黄色の頂点候補ハイライトをすべて消去するヘルパー関数
@@ -39,13 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
     }
 
-    function updateScoreDecorations(history) {
+    function updateScoreDecorations() {
         document.querySelectorAll('.decoration-group').forEach(el => el.remove());
         if (!history || history.length === 0) return;
         const allNoteElements = Array.from(document.querySelectorAll(".abcjs-note"));
         if (allNoteElements.length === 0) return;
         const scoreSVG = scoreDisplay.querySelector("svg");
         if (!scoreSVG) return;
+
         history.forEach(instruction => {
             const phrase = instruction.phrase;
             const presetName = instruction.preset_name;
@@ -110,48 +113,24 @@ document.addEventListener("DOMContentLoaded", () => {
         group.appendChild(rectEl);
     }
     
-    function handleServerResponse(result) {
-        if (result.error) {
-            alert(`エラー: ${result.error}`);
-            statusMessage.textContent = `⚠️ エラー: ${result.error}`;
-            updateButtonsState();
-            throw new Error(result.error);
-        }
-        statusMessage.textContent = `✅ ${result.message || '処理が完了しました。'}`;
-        window.lastFlaskResponse = result;
-        if (result.status !== 'processing') {
-             redoStack = []; // サーバーからの同期的な応答でクライアントのRedoスタックはリセット
-        }
-        updateButtonsState();
-        if (result.history.length === 0) {
-            compareContainer.style.display = "none";
-            saveArea.style.display = "none";
-            updateScoreDecorations([]);
-        } else {
-            compareContainer.style.display = "block";
-            saveArea.style.display = "block";
-            updateScoreDecorations(result.history);
-            if (result.status !== 'processing') {
-                flashPlayer();
-            }
-        }
-    }
-    
     function updateButtonsState() {
-        const history = window.lastFlaskResponse?.history || [];
         undoBtn.disabled = history.length === 0;
         redoBtn.disabled = redoStack.length === 0;
         resetMidiBtn.disabled = history.length === 0;
+        generateAudioBtn.disabled = history.length === 0;
     }
 
     uploadForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         statusMessage.textContent = "⌛ ファイルをアップロード中...";
+        scoreDisplay.innerHTML = ""; // 前の楽譜をクリア
         const formData = new FormData(uploadForm);
         try {
             const res = await fetch("/upload", { method: "POST", body: formData });
             const result = await res.json();
-            handleServerResponse(result);
+            if(result.error) throw new Error(result.error);
+            
+            statusMessage.textContent = `✅ ${result.message}。パートを選択してください。`;
             allPartAbcData = result.all_abc_data;
             partSelector.innerHTML = "";
             result.parts.forEach((p) => {
@@ -162,6 +141,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 partSelector.appendChild(opt);
             });
             partSelector.disabled = false;
+            // 初期化
+            history = [];
+            redoStack = [];
+            updateButtonsState();
+            compareContainer.style.display = "none";
+            saveArea.style.display = "none";
+            // partSelector.dispatchEvent(new Event('change')); // この行を削除！
         } catch (err) {
             console.error(err);
             statusMessage.textContent = "⚠️ エラー: " + err.message;
@@ -185,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const clickedEl = mouseEvent.target.closest(".abcjs-note");
             if (clickedEl) handleNoteClick(clickedEl);
         }});
-        setTimeout(() => { updateScoreDecorations(window.lastFlaskResponse?.history); }, 200);
+        setTimeout(() => { updateScoreDecorations(); }, 200);
         statusMessage.textContent = "✅ 音符をクリックして範囲を指定できます。";
     }
 
@@ -194,20 +180,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const noteIndex = noteElements.indexOf(clickedEl);
         if (noteIndex === -1) return;
 
-        // 頂点選択モードの時、選択範囲外のクリックは無視する
         if (selectionMode === 'peak') {
             const startIndex = selectedNotes.start.index;
             const endIndex = selectedNotes.end.index;
-            if (noteIndex < startIndex || noteIndex > endIndex) {
-                return;
-            }
+            if (noteIndex < startIndex || noteIndex > endIndex) return;
         }
         
         const noteMap = allNoteMaps[currentPartIndex];
         const tick = noteMap?.[noteIndex]?.tick ?? null;
         const currentMode = selectionMode;
 
-        // 新しいフレーズ選択を開始する場合、既存の頂点候補ハイライトを消し、選択状態をリセットする
         if (currentMode === 'start') {
             clearApexCandidatesHighlights();
             selectedNotes = { start: null, end: null, peak: null };
@@ -218,7 +200,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentMode === 'start') {
             selectionMode = 'end';
         } else if (currentMode === 'end') {
-            // 開始・終了が逆なら入れ替える
             if (selectedNotes.start.index > selectedNotes.end.index) {
                 [selectedNotes.start, selectedNotes.end] = [selectedNotes.end, selectedNotes.start];
             }
@@ -233,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     async function fetchApexCandidates() {
         statusMessage.textContent = '⏳ 頂点候補を推定中...';
-        clearApexCandidatesHighlights(); // 念のため、新しい候補を取得する前に既存のものをクリア
+        clearApexCandidatesHighlights();
 
         const { start, end } = selectedNotes;
         if (!start || !end) return;
@@ -257,8 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     noteElements[index].classList.add('apex-candidate');
                 }
             });
-            statusMessage.textContent = '✅ 黄色の頂点候補から1つ選択してください (候補以外も選択可能です)';
-
+            statusMessage.textContent = '✅ 黄色の頂点候補から1つ選択してください';
         } catch (err) {
             statusMessage.textContent = `⚠️ 頂点推定エラー: ${err.message}`;
         }
@@ -270,130 +250,152 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectedNotes.end?.el) selectedNotes.end.el.classList.add("selected-end");
         if (selectedNotes.peak?.el) selectedNotes.peak.el.classList.add("selected-peak");
         
-        document.getElementById("start-note-info").textContent = selectedNotes.start ? `index=${selectedNotes.start.index}` : "未選択";
-        document.getElementById("end-note-info").textContent = selectedNotes.end ? `index=${selectedNotes.end.index}` : "未選択";
-        document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index}` : "未選択";
-        
-        applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
+        document.getElementById("start-note-info").textContent = selectedNotes.start ? `index=${selectedNotes.start.index} / tick=${selectedNotes.start.tick}` : "未選択";
+        document.getElementById("end-note-info").textContent = selectedNotes.end ? `index=${selectedNotes.end.index} / tick=${selectedNotes.end.tick}` : "未選択";
+        document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index} / tick=${selectedNotes.peak.tick}` : "未選択";
+
+        applyToScoreBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
     }
 
     resetSelectionBtn.addEventListener("click", () => {
         selectionMode = "start";
         selectedNotes = { start: null, end: null, peak: null };
-        clearApexCandidatesHighlights(); // 頂点候補のハイライトを消す
+        clearApexCandidatesHighlights();
         updateSelectionUI();
         statusMessage.textContent = "選択をリセットしました。";
     });
 
-    async function handleOptimisticUpdate(endpoint, optimisticUpdateFn, spinnerId, requestBody = null) {
-        const originalHistory = window.lastFlaskResponse?.history ? JSON.parse(JSON.stringify(window.lastFlaskResponse.history)) : [];
-        const spinner = document.getElementById(spinnerId);
+    // --- 新しい操作フロー ---
+
+    applyToScoreBtn.addEventListener("click", () => {
+        if (applyToScoreBtn.disabled) return;
         
-        optimisticUpdateFn();
-        updateButtonsState();
+        const phraseInfo = { start_index: selectedNotes.start.index, end_index: selectedNotes.end.index, peak_index: selectedNotes.peak.index };
+        const tempoSelection = tempoPreset.value;
 
-        spinner.classList.remove("hidden");
-        [undoBtn, redoBtn, resetMidiBtn, applyBtn].forEach(btn => btn.disabled = true);
-        document.querySelectorAll('#compare-container button').forEach(btn => btn.disabled = true);
+        const newInstruction = {
+            phrase: phraseInfo,
+            preset_params: PRESETS.tempo_expressions[tempoSelection].params,
+            preset_name: tempoSelection,
+            part_index: currentPartIndex,
+            part_name: partSelector.selectedOptions[0].textContent,
+        };
 
-        try {
-            const fetchOptions = {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                ...(requestBody && { body: JSON.stringify(requestBody) })
-            };
-            const res = await fetch(endpoint, fetchOptions);
-            const result = await res.json();
-            if (result.error) throw new Error(result.error);
-            handleServerResponse(result);
-            checkAudioStatus([result.processed_single_wav, result.processed_full_wav]);
-        } catch (err) {
-            statusMessage.textContent = `⚠️ エラー: ${err.message}`;
-            window.lastFlaskResponse.history = originalHistory; // 履歴を元に戻す
-            redoStack = []; // エラー時はクライアントのRedoスタックもクリア
-            updateScoreDecorations(originalHistory);
-            updateButtonsState();
-        } finally {
-            spinner.classList.add("hidden");
+        const foundIndex = history.findIndex(instr => JSON.stringify(instr.phrase) === JSON.stringify(newInstruction.phrase));
+        if (foundIndex !== -1) {
+            history[foundIndex] = newInstruction;
+        } else {
+            history.push(newInstruction);
         }
-    }
+        
+        redoStack = []; // 新しい操作をしたらRedoスタックはクリア
+        updateScoreDecorations();
+        updateButtonsState();
+        
+        // 選択状態をリセット
+        resetSelectionBtn.click();
+        statusMessage.textContent = "✅ 楽譜に反映しました。音源生成ボタンでWAVを作成できます。";
+    });
 
     undoBtn.addEventListener("click", () => {
-        if (undoBtn.disabled) return;
-        handleOptimisticUpdate('/undo', () => {
-            let undoneAction = window.lastFlaskResponse.history.pop();
-            if (undoneAction) redoStack.push(undoneAction);
-            updateScoreDecorations(window.lastFlaskResponse.history);
-            statusMessage.textContent = "楽譜を元に戻しました。音源を生成中です...";
-        }, 'undo-spinner');
+        if (history.length === 0) return;
+        const undoneAction = history.pop();
+        redoStack.push(undoneAction);
+        updateScoreDecorations();
+        updateButtonsState();
     });
-    
+
     redoBtn.addEventListener("click", () => {
-        if (redoBtn.disabled) return;
-        handleOptimisticUpdate('/redo', () => {
-            let redoneAction = redoStack.pop();
-            if (redoneAction) window.lastFlaskResponse.history.push(redoneAction);
-            updateScoreDecorations(window.lastFlaskResponse.history);
-            statusMessage.textContent = "楽譜をやり直しました。音源を生成中です...";
-        }, 'redo-spinner');
+        if (redoStack.length === 0) return;
+        const redoneAction = redoStack.pop();
+        history.push(redoneAction);
+        updateScoreDecorations();
+        updateButtonsState();
     });
 
     resetMidiBtn.addEventListener("click", () => {
-        if (resetMidiBtn.disabled) return;
-        if (!confirm("本当にすべての加工をリセットしますか？この操作は元に戻せません。")) return;
-        handleOptimisticUpdate('/reset_midi', () => {
-            redoStack = [...window.lastFlaskResponse.history].reverse(); // 元の履歴をRedoスタックに
-            window.lastFlaskResponse.history = [];
-            updateScoreDecorations([]);
-            statusMessage.textContent = "楽譜をリセットしました。音源を生成中です...";
-        }, 'reset-spinner');
+        if (!confirm("本当にすべての加工をリセットしますか？")) return;
+        history = [];
+        redoStack = [];
+        updateScoreDecorations();
+        updateButtonsState();
+        compareContainer.style.display = "none";
+        saveArea.style.display = "none";
+        statusMessage.textContent = "すべての加工をリセットしました。";
     });
 
-    applyBtn.addEventListener("click", () => {
-        if (applyBtn.disabled) return;
-        const partIndex = currentPartIndex;
-        const phraseInfo = { start_index: selectedNotes.start.index, end_index: selectedNotes.end.index, peak_index: selectedNotes.peak.index };
-        const tempoSelection = tempoPreset.value;
-        const requestBody = {
-            partIndex, partName: partSelector.selectedOptions[0].textContent,
-            phrase: phraseInfo, presetParams: PRESETS.tempo_expressions[tempoSelection].params, presetName: tempoSelection
-        };
-        handleOptimisticUpdate('/process', () => {
-            const newInstruction = { phrase: phraseInfo, preset_name: tempoSelection };
-            const history = window.lastFlaskResponse.history;
-            const foundIndex = history.findIndex(instr => JSON.stringify(instr.phrase) === JSON.stringify(newInstruction.phrase));
-            if (foundIndex !== -1) {
-                 redoStack = [JSON.parse(JSON.stringify(history[foundIndex]))];
-                 history[foundIndex] = newInstruction;
-            } else {
-                 history.push(newInstruction);
-                 redoStack = [];
-            }
-            updateScoreDecorations(history);
-            statusMessage.textContent = "楽譜に反映しました。音源を生成中です...";
-        }, 'loading-spinner', requestBody);
-    });
-    
-    function checkAudioStatus(filesToCheck) {
-        const intervalId = setInterval(async () => {
-            try {
-                const res = await fetch('/check_audio_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ files: filesToCheck }) });
-                const result = await res.json();
-                if (result.status === 'ready') {
+    generateAudioBtn.addEventListener("click", async () => {
+        const spinner = document.getElementById('loading-spinner');
+        const progressArea = document.getElementById('progress-area');
+        spinner.classList.remove('hidden');
+        progressArea.classList.remove('hidden');
+        generateAudioBtn.disabled = true;
+
+        try {
+            const res = await fetch('/generate_audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    history: history,
+                    partIndex: currentPartIndex,
+                    partName: partSelector.selectedOptions[0].textContent
+                })
+            });
+            const { task_id } = await res.json();
+            
+            // ポーリングで進捗を確認
+            const intervalId = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/generation_status/${task_id}`);
+                    const data = await statusRes.json();
+                    
+                    const progressBar = document.getElementById('progress-bar');
+                    const progressText = document.getElementById('progress-text');
+
+                    if (data.state === 'PROGRESS') {
+                        const percentage = data.total > 0 ? (data.current / data.total) * 100 : 0;
+                        progressBar.style.width = `${percentage}%`;
+                        progressText.textContent = `音源生成中... (${data.message})`;
+                    } else if (data.state === 'SUCCESS') {
+                        clearInterval(intervalId);
+                        progressBar.style.width = '100%';
+                        progressText.textContent = '生成完了！';
+                        statusMessage.textContent = '✅ 音源の生成が完了しました！';
+                        
+                        window.lastGeneratedWavPaths = data.result;
+                        compareContainer.style.display = 'block';
+                        saveArea.style.display = 'block';
+                        flashPlayer();
+                        
+                        setTimeout(() => {
+                             progressArea.classList.add('hidden');
+                             spinner.classList.add('hidden');
+                             generateAudioBtn.disabled = false;
+                        }, 1500);
+
+                    } else if (data.state === 'FAILURE') {
+                        clearInterval(intervalId);
+                        statusMessage.textContent = `⚠️ 音源生成エラー: ${data.message}`;
+                        progressText.textContent = `エラーが発生しました。`;
+                        spinner.classList.add('hidden');
+                        generateAudioBtn.disabled = false;
+                    }
+                } catch (pollErr) {
                     clearInterval(intervalId);
-                    statusMessage.textContent = "✅ 音声ファイルの生成が完了しました！";
-                    document.querySelectorAll('#compare-container button').forEach(btn => btn.disabled = false);
-                    updateButtonsState();
-                    applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
-                    flashPlayer();
+                    console.error("Polling error:", pollErr);
+                    statusMessage.textContent = '⚠️ 進捗確認中にエラーが発生しました。';
+                    spinner.classList.add('hidden');
+                    generateAudioBtn.disabled = false;
                 }
-            } catch (err) {
-                console.error('Audio status check failed:', err);
-                clearInterval(intervalId);
-                updateButtonsState();
-            }
-        }, 2000);
-    }
+            }, 1500);
+
+        } catch (err) {
+            console.error("Generation start error:", err);
+            statusMessage.textContent = '⚠️ 音源生成の開始に失敗しました。';
+            spinner.classList.add('hidden');
+            generateAudioBtn.disabled = false;
+        }
+    });
     
     function flashPlayer() {
         compareContainer.classList.remove('flash-success');
@@ -403,13 +405,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener('click', function(event) {
         if (event.target?.id === 'save-midi-btn') {
-            const wavPath = window.lastFlaskResponse?.processed_full_wav;
-            if(!wavPath) return alert("保存対象のMIDIファイルが見つかりません。");
-            const midiFilename = wavPath.split('/').pop().replace('_full_processed.wav', '_full_processed.mid');
-            const finalMidiUrl = `/output/midi/full_parts/processed/${midiFilename}`;
+            const midiPath = window.lastGeneratedWavPaths?.processed_midi_full;
+            if(!midiPath) return alert("保存対象のMIDIファイルが見つかりません。");
+            
             const a = document.createElement('a');
-            a.href = finalMidiUrl;
-            a.download = midiFilename;
+            a.href = midiPath;
+            a.download = midiPath.split('/').pop();
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -418,12 +419,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function playWAV(type, clickedButton) {
-    const wavUrl = window.lastFlaskResponse?.[type === "processed_single" ? "processed_single_wav" : type === "original_single" ? "original_single_wav" : type === "processed_full" ? "processed_full_wav" : "original_full_wav"];
-    if (!wavUrl) return;
-    const cacheBustingUrl = `${wavUrl}?v=${new Date().getTime()}`;
+    const wavPath = window.lastGeneratedWavPaths?.[`${type}_wav`];
+    if (!wavPath) return;
+
+    // 元音源は毎回同じなのでキャッシュバスティング不要
+    const finalUrl = (type.startsWith("processed")) ? `${wavPath}?v=${new Date().getTime()}` : wavPath;
+
     document.querySelectorAll('.compare-block button').forEach(btn => btn.classList.remove('is-playing'));
     if (window.currentAudio) window.currentAudio.pause();
-    window.currentAudio = new Audio(cacheBustingUrl);
+    window.currentAudio = new Audio(finalUrl);
     window.currentAudio.play().then(() => clickedButton?.classList.add('is-playing'));
     window.currentAudio.onended = () => clickedButton?.classList.remove('is-playing');
 }

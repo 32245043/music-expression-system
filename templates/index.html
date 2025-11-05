@@ -107,13 +107,26 @@
                 <div class="card">
                     <h2>5. 適用と再生</h2>
                     <p>設定が完了したら、下のボタンを押してください。</p>
-                    <p style="font-size: 0.9em; color: #555;">生成が完了すると下の聴き比べエリアが緑に光ります</p>
+                    
+                    <div class="action-button-container" style="margin-bottom: 10px;">
+                        <button id="apply-to-score-btn" disabled>楽譜へ反映</button>
+                    </div>
+                    
+                    <p style="font-size: 0.9em; color: #555;">楽譜に反映後、下のボタンで音源を生成します。</p>
 
                     <div class="action-button-container">
-                        <button id="apply-btn" disabled>適用して加工後MIDIを生成</button>
+                        <button id="generate-audio-btn" class="generate-btn" disabled>音源を生成</button>
                         <div id="loading-spinner" class="loader hidden"></div>
                     </div>
                     
+                    <!-- 進捗表示エリア -->
+                    <div id="progress-area" class="hidden" style="margin-top: 10px; background-color: #f0f0f0; padding: 8px; border-radius: 4px; text-align: center;">
+                        <span id="progress-text"></span>
+                        <div id="progress-bar-container" style="background-color: #e0e0e0; border-radius: 4px; overflow: hidden; margin-top: 5px;">
+                            <div id="progress-bar" style="width: 0%; height: 10px; background-color: #007bff; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+
                     <!-- 🎧 聴き比べボタン群 -->
                     <div id="compare-container" style="margin-top: 15px; display:none;">
                         <h3>🎧 聴き比べ</h3>
