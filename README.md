@@ -36,7 +36,7 @@
 ## 📁 ディレクトリ構成
 
 本システムの主要なファイルと、プログラム実行時に自動生成されるフォルダの構成は以下の通りです。
-
+```
 music-expression/
 │
 ├── app.py # Flaskアプリ本体（ルーティング・API処理）
@@ -72,7 +72,7 @@ music-expression/
 │ └── FluidR3_GM.sf2 # MIDIをWAVに変換するための音源ファイル
 │
 └── requirements.txt # Pythonの依存ライブラリリスト
-
+```
 ---
 
 ## ⚙️ 環境構築手順（Windows）
