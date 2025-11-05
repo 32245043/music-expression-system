@@ -32,6 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentAudio = null;
     let redoStack = []; // Redo操作をクライアント側で模倣するためのスタック
 
+    /**
+     * 黄色の頂点候補ハイライトをすべて消去するヘルパー関数
+     */
+    function clearApexCandidatesHighlights() {
+        document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
+    }
+
     function updateScoreDecorations(history) {
         document.querySelectorAll('.decoration-group').forEach(el => el.remove());
         if (!history || history.length === 0) return;
@@ -199,6 +206,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const noteMap = allNoteMaps[currentPartIndex];
         const tick = noteMap?.[noteIndex]?.tick ?? null;
         const currentMode = selectionMode;
+
+        // 新しいフレーズ選択を開始する場合、既存の頂点候補ハイライトを消し、選択状態をリセットする
+        if (currentMode === 'start') {
+            clearApexCandidatesHighlights();
+            selectedNotes = { start: null, end: null, peak: null };
+        }
         
         selectedNotes[currentMode] = { index: noteIndex, tick, el: clickedEl };
         
@@ -220,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     async function fetchApexCandidates() {
         statusMessage.textContent = '⏳ 頂点候補を推定中...';
-        document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
+        clearApexCandidatesHighlights(); // 念のため、新しい候補を取得する前に既存のものをクリア
 
         const { start, end } = selectedNotes;
         if (!start || !end) return;
@@ -262,16 +275,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("peak-note-info").textContent = selectedNotes.peak ? `index=${selectedNotes.peak.index}` : "未選択";
         
         applyBtn.disabled = !(selectedNotes.start && selectedNotes.end && selectedNotes.peak);
-        
-        // 頂点選択モードでなければ、候補のハイライトを消す
-        if (selectionMode !== 'peak') {
-            document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
-        }
     }
 
     resetSelectionBtn.addEventListener("click", () => {
         selectionMode = "start";
         selectedNotes = { start: null, end: null, peak: null };
+        clearApexCandidatesHighlights(); // 頂点候補のハイライトを消す
         updateSelectionUI();
         statusMessage.textContent = "選択をリセットしました。";
     });

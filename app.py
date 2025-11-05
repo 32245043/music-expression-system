@@ -42,6 +42,10 @@ app.config.update(
     SECRET_KEY='supersecretkey_for_session'
 )
 
+# --- グローバル定数 ---
+FLUIDSYNTH_EXE = r"C:\tools\fluidsynth\bin\fluidsynth.exe"
+SOUNDFONT_PATH = os.path.join(BASE_DIR, "soundfonts", "FluidR3_GM.sf2")
+
 # ============================================================
 # 表現プリセット（発想標語のみ）
 # ============================================================
@@ -136,12 +140,25 @@ def run_fluidsynth_in_background(commands):
     """fluidsynthのコマンドリストを受け取り、サブプロセスで実行する"""
     for cmd in commands:
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            app.logger.info(f"Background WAV generation succeeded for: {cmd[-2]}")
+            # 実行するコマンドをログに出力
+            app.logger.info(f"実行コマンド: {' '.join(cmd)}")
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+            # 成功時の標準出力もログに残す
+            if result.stdout:
+                app.logger.info(f"FluidSynth STDOUT: {result.stdout}")
+            app.logger.info(f"✅ WAV生成成功: {cmd[-2]}")
         except subprocess.CalledProcessError as e:
-            app.logger.error(f"Background WAV generation failed for: {cmd[-2]}. Error: {e.stderr}")
+            # エラー時は標準エラーと標準出力を両方ログに残す
+            app.logger.error(f"❌ WAV生成失敗: {cmd[-2]}")
+            app.logger.error(f"FluidSynth Return Code: {e.returncode}")
+            if e.stdout:
+                app.logger.error(f"FluidSynth STDOUT: {e.stdout}")
+            if e.stderr:
+                app.logger.error(f"FluidSynth STDERR: {e.stderr}")
+        except FileNotFoundError:
+             app.logger.error(f"❌ コマンド実行エラー: '{cmd[0]}' が見つかりません。パスが通っているか、ファイルが存在するか確認してください。")
         except Exception as e:
-            app.logger.error(f"An unexpected error occurred during background WAV generation: {e}")
+            app.logger.error(f"予期せぬエラーが発生しました: {e}")
 
 # ============================================================
 # 共通バックグラウンド処理関数
@@ -177,15 +194,19 @@ def process_in_background(midi_obj, part_index, part_name, message):
 
     # WAV変換の準備と実行
     audio_root = os.path.join(OUTPUT_FOLDER, "audio")
+    os.makedirs(os.path.join(audio_root, "single_parts", "processed"), exist_ok=True)
+    os.makedirs(os.path.join(audio_root, "full_parts", "processed"), exist_ok=True)
     single_audio_processed_path = os.path.join(audio_root, "single_parts", "processed", f"{song_name}_{safe_part_name}_processed.wav")
     processed_wav_full_path = os.path.join(audio_root, "full_parts", "processed", f"{song_name}_full_processed.wav")
     if os.path.exists(single_audio_processed_path): os.remove(single_audio_processed_path)
     if os.path.exists(processed_wav_full_path): os.remove(processed_wav_full_path)
     
-    fluidsynth_exe = r"C:\tools\fluidsynth\bin\fluidsynth.exe"
-    soundfont_path = r"soundfonts\FluidR3_GM.sf2"
-    cmd_single = [fluidsynth_exe, "-ni", soundfont_path, single_out_path, "-F", single_audio_processed_path, "-r", "44100"]
-    cmd_full = [fluidsynth_exe, "-ni", soundfont_path, full_out_path, "-F", processed_wav_full_path, "-r", "44100"]
+    # ファイルが存在するかチェック
+    if not os.path.exists(SOUNDFONT_PATH):
+        app.logger.error(f"サウンドフォントが見つかりません: {SOUNDFONT_PATH}")
+
+    cmd_single = [FLUIDSYNTH_EXE, "-ni", SOUNDFONT_PATH, single_out_path, "-F", single_audio_processed_path, "-r", "44100"]
+    cmd_full = [FLUIDSYNTH_EXE, "-ni", SOUNDFONT_PATH, full_out_path, "-F", processed_wav_full_path, "-r", "44100"]
     thread = threading.Thread(target=run_fluidsynth_in_background, args=([cmd_single, cmd_full],))
     thread.start()
 
@@ -252,6 +273,22 @@ def upload_files():
         processor = MidiProcessor(original_midi_path)
         parts_info = []
         all_abc_data = {}
+        
+        # --- ここから変更点 ---
+        # WAV生成コマンドを格納するリスト
+        initial_wav_commands = []
+        
+        # 1. オリジナルの全パートMIDIをWAVに変換する準備
+        original_full_midi_dir = os.path.join(OUTPUT_DIRS["midi_full"], "original")
+        os.makedirs(original_full_midi_dir, exist_ok=True)
+        original_full_midi_path = os.path.join(original_full_midi_dir, f"{song_name}_full_original.mid")
+        shutil.copy(original_midi_path, original_full_midi_path)
+
+        original_full_audio_dir = os.path.join(OUTPUT_DIRS["audio"], "full_parts", "original")
+        os.makedirs(original_full_audio_dir, exist_ok=True)
+        original_full_wav_path = os.path.join(original_full_audio_dir, f"{song_name}_full_original.wav")
+        initial_wav_commands.append([FLUIDSYNTH_EXE, "-ni", SOUNDFONT_PATH, original_full_midi_path, "-F", original_full_wav_path, "-r", "44100"])
+        
         for i, part in enumerate(score.parts):
             raw_part_name = part.partName or f"Part{i+1}"
             part_name = safe_name(raw_part_name)
@@ -260,6 +297,18 @@ def upload_files():
             note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{song_name}_{part_name}_note_map.json")
             part.write('musicxml', fp=xml_out_path)
             processor.create_note_map_from_part(part, note_map_path)
+            
+            # 2. オリジナルの単一パートMIDIを保存し、WAV変換の準備
+            original_single_midi_dir = os.path.join(OUTPUT_DIRS["midi_single"], "original")
+            os.makedirs(original_single_midi_dir, exist_ok=True)
+            original_single_midi_path = os.path.join(original_single_midi_dir, f"{song_name}_{part_name}_original.mid")
+            processor.save_single_part_to_file(i, original_single_midi_path)
+
+            original_single_audio_dir = os.path.join(OUTPUT_DIRS["audio"], "single_parts", "original")
+            os.makedirs(original_single_audio_dir, exist_ok=True)
+            original_single_wav_path = os.path.join(original_single_audio_dir, f"{song_name}_{part_name}_original.wav")
+            initial_wav_commands.append([FLUIDSYNTH_EXE, "-ni", SOUNDFONT_PATH, original_single_midi_path, "-F", original_single_wav_path, "-r", "44100"])
+
             success = convert_with_xml2abc(xml_out_path, abc_out_path)
             if success and os.path.exists(abc_out_path):
                 with open(abc_out_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -267,6 +316,15 @@ def upload_files():
             else:
                 all_abc_data[i] = f"X:1\nT:{raw_part_name}\nM:4/4\nL:1/8\nK:C\n| CDEC | GFEF |]"
             parts_info.append({'name': raw_part_name, 'index': i, 'note_map': f"json/{os.path.basename(note_map_path)}"})
+            
+        # 3. バックグラウンドでWAV生成を開始
+        if not os.path.exists(SOUNDFONT_PATH):
+            app.logger.error(f"Upload: SoundFont not found at {SOUNDFONT_PATH}. Original WAVs will not be generated.")
+        else:
+            thread = threading.Thread(target=run_fluidsynth_in_background, args=(initial_wav_commands,))
+            thread.start()
+        # --- ここまで変更点 ---
+            
         return jsonify({'message': f'ファイルが正常にアップロードされました（連番: {counter}）', 'parts': parts_info, 'all_abc_data': all_abc_data, 'history': [], 'can_undo': False, 'can_redo': False})
     except Exception as e:
         app.logger.exception("Upload error")
@@ -364,15 +422,15 @@ def estimate_apex():
                  scores[n_minus_1['index']] += 1
 
     # --- ここからデバッグ出力 ---
-    print("\n--- 頂点推定デバッグ情報 ---")
-    print(f"対象パート: {part_name}")
-    print(f"選択範囲インデックス: {start_index} から {end_index}")
-    print("計算されたスコア:")
-    if not scores:
-        print("  スコア計算対象の音符がありません。")
-    else:
-        for index, score in sorted(scores.items()):
-            print(f"  Note Index {index:<3}: Score {score:.2f}")
+    # print("\n--- 頂点推定デバッグ情報 ---")
+    # print(f"対象パート: {part_name}")
+    # print(f"選択範囲インデックス: {start_index} から {end_index}")
+    # print("計算されたスコア:")
+    # if not scores:
+    #     print("  スコア計算対象の音符がありません。")
+    # else:
+    #     for index, score in sorted(scores.items()):
+    #         print(f"  Note Index {index:<3}: Score {score:.2f}")
     
     if not scores:
         max_score = 0
@@ -381,9 +439,9 @@ def estimate_apex():
     
     candidates = [index for index, score in scores.items() if score == max_score and max_score > 0]
     
-    print(f"最高スコア: {max_score:.2f}")
-    print(f"最終的な頂点候補 (インデックス): {candidates}")
-    print("--- デバッグ情報 終了 ---\n")
+    # print(f"最高スコア: {max_score:.2f}")
+    # print(f"最終的な頂点候補 (インデックス): {candidates}")
+    # print("--- デバッグ情報 終了 ---\n")
     # --- ここまでデバッグ出力 ---
     
     return jsonify({'apex_candidates': candidates})
