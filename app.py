@@ -386,13 +386,27 @@ def upload_files():
         app.logger.exception("Upload error")
         return jsonify({'error': f'アップロードエラー: {e}'}), 500
 
+# ★★★ ここからが修正箇所 ★★★
+
+def midi_to_note_name(midi_number):
+    """MIDIノート番号を 'C4' のような音名表記に変換するヘルパー関数"""
+    if midi_number is None:
+        return None
+    try:
+        p = music21.pitch.Pitch()
+        p.midi = midi_number
+        return p.nameWithOctave
+    except Exception:
+        return str(midi_number)
+
 @app.route('/estimate_apex', methods=['POST'])
 def estimate_apex():
     """指定された範囲の音符群から、論文ルールに基づき頂点（アペックス）を推定する"""
     data = request.json
     part_name = data.get('partName')
-    start_index = data.get('startIndex')
-    end_index = data.get('endIndex')
+    # フロントエンドから送られてくるのは「休符抜き」のインデックス
+    fe_start_index = data.get('startIndex')
+    fe_end_index = data.get('endIndex')
 
     note_map_path = os.path.join(OUTPUT_DIRS["json"], f"{session.get('song_name')}_{safe_name(part_name)}_note_map.json")
     if not os.path.exists(note_map_path):
@@ -401,45 +415,115 @@ def estimate_apex():
     with open(note_map_path, 'r', encoding='utf-8') as f:
         note_map = json.load(f)
 
-    # 指定された範囲の音符（休符は除く）を抽出
-    phrase_notes = [n for n in note_map if start_index <= n['index'] <= end_index and not n['is_rest']]
+    # =======================================================================================
+    # --- フロントエンドのインデックスを、note_mapのインデックスに ---
+    # =======================================================================================
+    notes_only_map = [n for n in note_map if not n['is_rest']]
     
-    if not phrase_notes:
+    if not (0 <= fe_start_index < len(notes_only_map) and 0 <= fe_end_index < len(notes_only_map)):
+        return jsonify({'error': '無効な音符インデックスです。'}), 400
+
+    true_start_index = notes_only_map[fe_start_index]['index']
+    true_end_index = notes_only_map[fe_end_index]['index']
+    
+    # =======================================================================================
+    # --- タイ結合を考慮した論理音符リストの作成 ---
+    # =======================================================================================
+    logical_full_note_map = []
+    i = 0
+    while i < len(note_map):
+        current_event = note_map[i]
+        
+        if current_event['is_rest']:
+            logical_full_note_map.append(current_event)
+            i += 1
+            continue
+
+        last_index_in_tie = i
+        if current_event.get('tie_info') == 'start':
+            tied_duration = current_event['duration_beats']
+            j = i + 1
+            while j < len(note_map):
+                next_event = note_map[j]
+                if next_event.get('tie_info') in ['continue', 'stop'] and next_event.get('pitch') == current_event.get('pitch'):
+                    tied_duration += next_event['duration_beats']
+                    last_index_in_tie = j
+                    if next_event.get('tie_info') == 'stop':
+                        break
+                else:
+                    break
+                j += 1
+            
+            logical_note = current_event.copy()
+            logical_note['duration_beats'] = tied_duration
+            logical_note['original_indices_range'] = (current_event['index'], note_map[last_index_in_tie]['index'])
+            logical_full_note_map.append(logical_note)
+            i = j + 1
+        else:
+            current_event['original_indices_range'] = (current_event['index'], current_event['index'])
+            logical_full_note_map.append(current_event)
+            i += 1
+    
+    # =======================================================================================
+    # --- 選択されたフレーズ内の音符リストを抽出 ---
+    # =======================================================================================
+    logical_phrase_notes = []
+    for logical_note in logical_full_note_map:
+        if logical_note.get('is_rest', False):
+            continue
+            
+        note_start, note_end = logical_note['original_indices_range']
+        phrase_start, phrase_end = true_start_index, true_end_index
+        if max(note_start, phrase_start) <= min(note_end, phrase_end):
+            logical_phrase_notes.append(logical_note)
+
+    if not logical_phrase_notes:
         return jsonify({'apex_candidates': []})
         
+    # デバッグ用
+    print("\n--- 選択されたフレーズの論理音符リスト ---")
+    for note in logical_phrase_notes:
+        start_orig_idx, end_orig_idx = note['original_indices_range']
+        range_str = f"(covers: {start_orig_idx}-{end_orig_idx})" if start_orig_idx != end_orig_idx else ""
+        
+        print(
+            f"  Index: {note['index']:<4} "
+            f"音名: {midi_to_note_name(note.get('pitch')):<5} "
+            f"音価(beats): {note['duration_beats']:.2f} {range_str}"
+        )
+    print("-------------------------------------\n")
+    
     # =======================================================================================
-    # --- 論文ルールに基づくスコアリング (ルール中心アプローチ) ---
+    # --- 論文ルールに基づくスコアリング ---
     # =======================================================================================
 
     # 【ステップ1：前準備】
     # -----------------------------------------------------------------------------------
+    scores = {note['index']: 0 for note in logical_phrase_notes}
+
     # 同じ音価が続く音符をグループ分けする
     duration_groups = []
-    if phrase_notes:
-        current_group = [phrase_notes[0]]
-        for i in range(1, len(phrase_notes)):
-            if phrase_notes[i]['duration_beats'] == current_group[0]['duration_beats']:
-                current_group.append(phrase_notes[i])
+    if logical_phrase_notes:
+        current_group = [logical_phrase_notes[0]]
+        for i in range(1, len(logical_phrase_notes)):
+            if logical_phrase_notes[i]['duration_beats'] == current_group[0]['duration_beats']:
+                current_group.append(logical_phrase_notes[i])
             else:
                 duration_groups.append(current_group)
-                current_group = [phrase_notes[i]]
+                current_group = [logical_phrase_notes[i]]
         duration_groups.append(current_group)
-
-    # 各音符のスコアを保存する辞書を0で初期化
-    scores = {note['index']: 0 for note in phrase_notes}
 
     # 【ステップ2：スコア計算】
     # -----------------------------------------------------------------------------------
-
     # --- ルール適用：音価 ---
     
     # ルール1. 隣接する2音の比較
-    for i in range(len(phrase_notes) - 1): # ループは最後から2番目の音符まで
-        note = phrase_notes[i]
-        next_note = phrase_notes[i+1]
-        if note['duration_beats'] > next_note['duration_beats']: # 後続音より長い場合
+    for i in range(len(logical_phrase_notes) - 1):
+        note = logical_phrase_notes[i]
+        next_note = logical_phrase_notes[i+1]
+        if note['duration_beats'] > next_note['duration_beats']:
             scores[note['index']] += 1
-        elif note['duration_beats'] < next_note['duration_beats']: # 後続音より短い場合
+        elif note['duration_beats'] < next_note['duration_beats']:
             scores[next_note['index']] += 1
             
     # ルール2. 同一音価が連続する音群
@@ -449,23 +533,23 @@ def estimate_apex():
             scores[group[0]['index']] += 1
             # 第2音以降に「発音順/音符数」を加算
             for pos, note_in_group in enumerate(group):
-                if pos > 0: # 0番目(第1音)は除く
+                if pos > 0:
                     scores[note_in_group['index']] += (pos + 1) / len(group)
 
     # --- ルール適用：音高 ---
     
     # ルール1. 隣接する2音の比較
-    for i in range(len(phrase_notes) - 1):
-        note = phrase_notes[i]
-        next_note = phrase_notes[i+1]
-        if note['pitch'] > next_note['pitch']: # 後続音より高い場合
+    for i in range(len(logical_phrase_notes) - 1):
+        note = logical_phrase_notes[i]
+        next_note = logical_phrase_notes[i+1]
+        if note['pitch'] > next_note['pitch']:
             scores[note['index']] += 1
-        elif note['pitch'] < next_note['pitch']: # 後続音より低い場合
+        elif note['pitch'] < next_note['pitch']:
             scores[next_note['index']] += 1
 
     # ルール2. 進行到達音 (4音のパターン)
-    for i in range(1, len(phrase_notes) - 2): # 4音パターンを見るため、ループ範囲に注意
-        n_minus_1, n, n_plus_1, n_plus_2 = phrase_notes[i-1], phrase_notes[i], phrase_notes[i+1], phrase_notes[i+2]
+    for i in range(1, len(logical_phrase_notes) - 2):
+        n_minus_1, n, n_plus_1, n_plus_2 = logical_phrase_notes[i-1], logical_phrase_notes[i], logical_phrase_notes[i+1], logical_phrase_notes[i+2]
         p_m1, p_n, p_p1, p_p2 = n_minus_1['pitch'], n['pitch'], n_plus_1['pitch'], n_plus_2['pitch']
         
         dir1 = 1 if p_n > p_m1 else -1 if p_n < p_m1 else 0
@@ -475,22 +559,22 @@ def estimate_apex():
         
         # 1) 上行-上行-下行
         if dir1 >= 0 and dir2 > 0 and dir3 < 0: 
-            scores[n_plus_1['index']] += 1 # 対象音
+            scores[n_plus_1['index']] += 1
             pattern = 1
         # 2) 下行-上行-下行
         elif dir1 < 0 and dir2 > 0 and dir3 < 0: 
-            scores[n['index']] += 2         # 先行音
-            scores[n_plus_1['index']] += 1  # 対象音
+            scores[n['index']] += 2
+            scores[n_plus_1['index']] += 1
             pattern = 2
         # 3) 上行-下行-上行
         elif dir1 >= 0 and dir2 < 0 and dir3 > 0: 
-            scores[n['index']] += 1         # 先行音
-            scores[n_plus_1['index']] += 2  # 対象音
-            scores[n_plus_2['index']] += 1  # 後続音
+            scores[n['index']] += 1
+            scores[n_plus_1['index']] += 2
+            scores[n_plus_2['index']] += 1
         # 4) 下行-下行-上行
         elif dir1 < 0 and dir2 < 0 and dir3 > 0: 
-            scores[n_plus_1['index']] += 2  # 対象音
-            scores[n_plus_2['index']] += 1  # 後続音
+            scores[n_plus_1['index']] += 2
+            scores[n_plus_2['index']] += 1
         
         # 5) 追加ルール
         if (pattern in [1, 2]) and n_plus_1['duration_seconds'] < 0.25:
@@ -498,10 +582,33 @@ def estimate_apex():
 
     # 【ステップ3：結果の集計】
     # -----------------------------------------------------------------------------------
-    # 最高スコアを持つ音符のインデックスを候補として返す
     max_score = max(scores.values()) if scores else 0
     candidates = [index for index, score in scores.items() if score == max_score and max_score > 0]
-    return jsonify({'apex_candidates': candidates})
+    
+    expanded_candidates = []
+    for index in candidates:
+        expanded_candidates.append(index)
+        note = next((n for n in note_map if n['index'] == index), None)
+        
+        if note and note.get('tie_info') == 'start':
+            current_index = index + 1
+            while current_index < len(note_map):
+                next_note = note_map[current_index]
+                if next_note.get('tie_info') in ['continue', 'stop']:
+                    expanded_candidates.append(current_index)
+                    if next_note.get('tie_info') == 'stop':
+                        break
+                else:
+                    break
+                current_index += 1
+                
+    final_candidates = sorted(list(set(expanded_candidates)))
+    
+    # 候補のインデックスも休符抜きにして返す
+    notes_only_indices = {note['index']: i for i, note in enumerate(notes_only_map)}
+    fe_candidates = [notes_only_indices[i] for i in final_candidates if i in notes_only_indices]
+    
+    return jsonify({'apex_candidates': fe_candidates})
 
 
 @app.route('/generate_audio', methods=['POST'])

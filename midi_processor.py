@@ -79,8 +79,11 @@ class MidiProcessor:
 
                 # 音の高さ(MIDIノート番号)を取得。休符の場合はNone
                 pitch_midi = None
+                tie_info = None # ★ 変更点: tie_info変数を初期化
                 if elem.isNote:
                     pitch_midi = elem.pitch.midi
+                    if elem.tie: # ★ 変更点: music21のtie情報をチェック
+                        tie_info = elem.tie.type # ★ 変更点: 'start', 'stop', 'continue' などを取得
                 
                 # 音符の秒単位の長さを計算
                 duration_seconds = duration_quarters * quarter_sec
@@ -94,7 +97,8 @@ class MidiProcessor:
                     "seconds_ms": float(round(seconds_ms, 3)),
                     "tick": int(tick),
                     "pitch": pitch_midi, 
-                    "is_rest": elem.isRest
+                    "is_rest": elem.isRest,
+                    "tie_info": tie_info # ★ 変更点: note_mapにtie情報を追加
                 })
                 idx += 1
 
