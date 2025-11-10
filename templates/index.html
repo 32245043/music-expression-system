@@ -89,7 +89,10 @@
 
                 <!-- 4: 表現プリセット -->
                 <div class="card">
-                    <h2>4. 表現プリセット</h2>
+                    <div class="card-header">
+                        <h2>4. 表現プリセット</h2>
+                        <button id="toggle-params-btn" class="test-mode-btn">パラメータ調整</button>
+                    </div>
                     <label for="tempo-preset">発想標語プリセット:</label>
                     <select id="tempo-preset">
                         {% for name, data in presets.tempo_expressions.items() %}
@@ -101,6 +104,22 @@
                         </option>
                         {% endfor %}
                     </select>
+                    
+                    <div id="parameter-editor" class="hidden">
+                        <p class="editor-title">テスト用パラメータ調整</p>
+                        <div class="param-group">
+                            <label for="param-base-cc2">基本CC#2増減 (base_cc2)</label>
+                            <input type="number" id="param-base-cc2" class="param-input">
+                        </div>
+                        <div class="param-group">
+                            <label for="param-peak-cc2">頂点CC#2増減 (peak_cc2)</label>
+                            <input type="number" id="param-peak-cc2" class="param-input">
+                        </div>
+                        <div class="param-group">
+                            <label for="param-onset-ms">発音タイミング (onset_ms)</label>
+                            <input type="number" id="param-onset-ms" class="param-input">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 5: 適用と再生 -->

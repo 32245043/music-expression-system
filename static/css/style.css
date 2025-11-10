@@ -2,151 +2,164 @@
 /* 全体・基本スタイル                            */
 /* ============================================= */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f7f9; /* 背景色 */
-    color: #333;
-    line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* モダンなOSで標準的なフォントを指定 */
+    margin: 0; /* body要素の外側の余白をなくす */
+    background-color: #f4f7f9; /* アプリケーション全体の背景色 */
+    color: #333; /* 基本の文字色 */
+    line-height: 1.6; /* 行の高さを設定し、読みやすくする */
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+    max-width: 1400px; /* コンテンツ全体の最大幅を指定 */
+    margin: 0 auto; /* 中央揃え */
+    padding: 20px; /* コンテナの内側に余白を持たせる */
 }
 
 header {
-    text-align: center;
-    margin-bottom: 25px;
-    border-bottom: 2px solid #e0e0e0;
-    padding-bottom: 15px;
+    text-align: center; /* ヘッダー内のテキストを中央揃え */
+    margin-bottom: 25px; /* ヘッダーの下に余白 */
+    border-bottom: 2px solid #e0e0e0; /* ヘッダーの下に区切り線 */
+    padding-bottom: 15px; /* ヘッダーの下の余白（内側） */
 }
 
 header h1 {
-    margin: 0;
-    color: #2c3e50;
+    margin: 0; /* h1のデフォルトマージンをリセット */
+    color: #2c3e50; /* h1の文字色 */
 }
 
 /* ============================================= */
 /* レイアウト                                     */
 /* ============================================= */
 .main-content {
-    display: flex; /* Flexboxを有効にし、子要素を横並びにする */
+    display: flex; /* Flexboxを有効にし、子要素（左・右パネル）を横並びにする */
     gap: 20px; /* パネル間の隙間 */
-    align-items: flex-start; /* 上揃え */
+    align-items: flex-start; /* 子要素を上揃えにする */
 }
 
 .panel {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 影 */
-    border: 1px solid #e9ecef;
+    background-color: white; /* パネルの背景色 */
+    padding: 20px; /* パネルの内側の余白 */
+    border-radius: 8px; /* パネルの角を丸める */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* パネルに影を付けて立体感を出す */
+    border: 1px solid #e9ecef; /* パネルの境界線 */
 }
 
 .left-panel {
     width: 380px; /* 左パネルの幅を固定 */
     flex-shrink: 0; /* 画面が縮んでもこのパネルは縮まないようにする */
-    display: flex;
-    flex-direction: column;
+    display: flex; /* パネル内の要素（カード）を縦に並べるためFlexboxを使用 */
+    flex-direction: column; /* 子要素を縦方向に配置 */
     gap: 20px; /* カード間の隙間 */
 }
 
 .right-panel {
-    flex-grow: 1; /* 残りの幅をすべて右パネルが使用する */
-    min-width: 0; /* Flexアイテムが親要素をはみ出すのを防ぐ */
+    flex-grow: 1; /* 残りの幅をすべて右パネルが使用するようにする */
+    min-width: 0; /* Flexアイテムが親要素をはみ出すのを防ぐおまじない */
     overflow-x: auto; /* 楽譜が横に長くなった場合にスクロールバーを出す */
 }
 
 /* ============================================= */
 /* カード内のスタイル                             */
 /* ============================================= */
-
+.card-header {
+    display: flex; /* ヘッダー内の要素（タイトルとボタンなど）を横並びにする */
+    justify-content: space-between; /* 両端に寄せる */
+    align-items: center; /* 上下中央揃え */
+    margin-bottom: 15px; /* ヘッダーの下に余白 */
+}
 
 .card h2 {
     margin-top: 0;
     font-size: 1.2em;
-    color: #34495e;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-    margin-bottom: 15px;
+    color: #34495e; /* カードタイトルの文字色 */
+    padding-bottom: 8px; /* タイトルの下に余白 */
+    /* 下記は重複していたりcard-headerで制御しているため不要 */
+    margin-bottom: 0; 
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 /* ============================================= */
 /* フォーム要素のスタイル                         */
 /* ============================================= */
 label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    display: block; /* ラベルをブロック要素にして、入力欄の上に表示 */
+    margin-bottom: 5px; /* ラベルの下に少し余白 */
+    font-weight: bold; /* ラベルの文字を太字に */
     color: #555;
     font-size: 0.9em;
 }
 
 input[type="file"],
 select {
-    width: 100%;
-    padding: 10px;
+    width: 100%; /* 親要素の幅いっぱいに広げる */
+    padding: 10px; /* 内側の余白 */
     margin-bottom: 15px; /* 要素間の隙間 */
-    box-sizing: border-box; /* paddingを含めて幅100%にする */
+    box-sizing: border-box; /* paddingを含めて幅100%になるように計算方法を変更 */
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 4px; /* 角を丸める */
     background-color: #f8f9fa;
 }
 
 button {
-    width: 100%;
+    width: 100%; /* 親要素の幅いっぱいに広げる */
     padding: 12px;
-    background-color: #007bff;
-    color: white;
-    border: none;
+    background-color: #007bff; /* 基本のボタン色（青） */
+    color: white; /* 文字色 */
+    border: none; /* 枠線なし */
     border-radius: 4px;
-    cursor: pointer;
+    cursor: pointer; /* マウスカーソルを指の形に */
     font-size: 1em;
     font-weight: bold;
-    transition: background-color 0.2s ease, transform 0.2s ease; /* transformも追加 */
+    transition: background-color 0.2s ease, transform 0.2s ease; /* 背景色と変形のアニメーション */
 }
 
+/* マウスが乗ったとき（ただし無効化されていない場合）のスタイル */
 button:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #0056b3; /* 少し濃い青に */
 }
 
+/* 無効化されているときのスタイル */
 button:disabled {
-    background-color: #ced4da;
-    cursor: not-allowed;
+    background-color: #ced4da; /* グレーアウト */
+    cursor: not-allowed; /* 禁止カーソルに */
 }
 
+/* 選択リセットボタンの個別スタイル */
 #reset-selection-btn {
-    background-color: #6c757d;
+    background-color: #6c757d; /* グレー系の色 */
 }
 #reset-selection-btn:hover:not(:disabled) {
     background-color: #5a6268;
 }
 
+/* 音源比較ブロック内のボタンのスタイル */
 .compare-block button {
-    background-color: #f8f9fa;
-    color: #495057;
-    border: 1px solid #ced4da;
-    font-weight: normal;
+    background-color: #f8f9fa; /* 明るい背景色 */
+    color: #495057; /* 暗めの文字色 */
+    border: 1px solid #ced4da; /* 枠線あり */
+    font-weight: normal; /* 太字にしない */
 }
 .compare-block button:hover:not(:disabled) {
     background-color: #e2e6ea;
 }
 
+/* Undo/Redoボタンのコンテナ */
 .history-controls {
     display: flex;
-    gap: 10px;
+    gap: 10px; /* ボタン間の隙間 */
 }
 
 .history-controls .action-button-container {
-    flex: 1;
+    flex: 1; /* 利用可能なスペースを均等に分ける */
 }
 
+/* Undo/Redoボタンの個別スタイル */
 #undo-btn {
-    background-color: #ffc107; color: #212529;
+    background-color: #ffc107; color: #212529; /* 黄色 */
 }
 #redo-btn {
-    background-color: #17a2b8;
+    background-color: #17a2b8; /* 青緑 */
 }
 
 
@@ -158,7 +171,7 @@ button:disabled {
 #phrase-info p {
     margin: 8px 0;
     font-size: 0.95em;
-    background-color: #e9f5ff;
+    background-color: #e9f5ff; /* 明るい青の背景 */
     padding: 5px 8px;
     border-radius: 3px;
 }
@@ -185,15 +198,15 @@ button:disabled {
 }
 
 /* ============================================= */
-/* 音符クリック選択の色分け */
+/* 音符クリック選択の色分け (abcjsで生成されるSVG要素に適用) */
 /* ============================================= */
 
 /* 開始音符（赤） */
 .abcjs-note.selected path,
 g.abcjs-note.selected path {
-    fill: #ff4c4c !important;
-    stroke: #ff4c4c !important;
-    
+    fill: #ff4c4c !important;   /* 塗りつぶし色 */
+    stroke: #ff4c4c !important; /* 線の色 */
+    /* !important は、abcjsが直接指定するスタイルを上書きするために必要 */
 }
 
 /* 終了音符（青） */
@@ -210,51 +223,57 @@ g.abcjs-note.apex-candidate path {
     stroke: #FFA500 !important;
 }
 
-/* 頂点音符（緑） */
+/* 選択された頂点音符（緑） */
 .abcjs-note.selected-peak path,
 g.abcjs-note.selected-peak path {
     fill: #4caf50 !important;
     stroke: #4caf50 !important;
 }
 
+/* 再生中のボタンのスタイル */
 .compare-block button.is-playing {
-    background-color: #007bff;
-    color: white;
+    background-color: #007bff; /* 青色 */
+    color: white; /* 白文字 */
     font-weight: bold;
     border-color: #007bff;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
-    transform: scale(1.03);
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); /* 青い影 */
+    transform: scale(1.03); /* 少しだけ大きく表示 */
 }
 
+/* 音源生成完了時の点滅アニメーションの定義 */
 @keyframes flash-animation {
   0% { background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
-  50% { background-color: #e6ffed; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); }
+  50% { background-color: #e6ffed; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); } /* 明るい緑に */
   100% { background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
 }
 
+/* 音源生成完了時に .flash-success クラスが付与された要素にアニメーションを適用 */
 #compare-container.flash-success {
     animation: flash-animation 1.5s ease-out;
 }
 
+/* 楽譜上に表示されるプリセット名のテキストスタイル */
 .expression-text {
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: Georgia, "Times New Roman", serif; /* クラシックなフォント */
     font-size: 15px;
-    font-style: italic;
+    font-style: italic; /* 斜体 */
     font-weight: normal;
-    fill: #34495e;
-    pointer-events: none;
+    fill: #34495e; /* 文字色 */
+    pointer-events: none; /* テキストがクリックイベントを妨げないようにする */
 }
 
+/* 楽譜上のフレーズ範囲ハイライトのスタイル */
 .phrase-highlight-rect {
-    fill: rgba(76, 175, 80, 0.15);
+    fill: rgba(76, 175, 80, 0.15); /* 半透明の緑 */
     stroke: none;
-    pointer-events: none;
-    rx: 4;
-    ry: 4;
+    pointer-events: none; /* ハイライトがクリックイベントを妨げないようにする */
+    rx: 4; /* 角の丸み（X軸） */
+    ry: 4; /* 角の丸み（Y軸） */
 }
 
+/* 楽譜上の頂点音符のハイライトスタイル */
 .phrase-peak-highlight {
-    fill: rgba(76, 175, 80, 0.4);
+    fill: rgba(76, 175, 80, 0.4); /* 少し濃い半透明の緑 */
     stroke: none;
     pointer-events: none;
     rx: 4;
@@ -262,32 +281,89 @@ g.abcjs-note.selected-peak path {
 }
 
 /* ============================================= */
-/* ローディングスピナー */
+/* ローディングスピナーとUIパーツ */
 /* ============================================= */
 .action-button-container {
     display: flex;
-    align-items: center;
+    align-items: center; /* ボタンとスピナーを垂直方向中央に揃える */
     gap: 15px;
 }
 
 .action-button-container button {
-    flex-grow: 1;
+    flex-grow: 1; /* ボタンが利用可能なスペースを埋める */
 }
 
+/* スピナー自体のスタイル */
 .loader {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
+    border: 4px solid #f3f3f3; /* 背景の円 */
+    border-top: 4px solid #3498db; /* 回転する部分の色 */
+    border-radius: 50%; /* 完全な円にする */
     width: 20px;
     height: 20px;
-    animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite; /* spinアニメーションを適用 */
 }
 
+/* 回転アニメーションの定義 */
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
+/* 非表示にするための汎用クラス */
 .hidden {
     display: none !important;
+}
+
+/* パラメータ調整UIの切り替えボタン */
+.test-mode-btn {
+    padding: 4px 10px;
+    font-size: 0.8em;
+    width: auto; /* 幅を自動に */
+    background-color: #6c757d;
+    font-weight: normal;
+}
+/* アクティブ（表示中）の時のスタイル */
+.test-mode-btn.active {
+    background-color: #17a2b8;
+    box-shadow: 0 0 8px rgba(23, 162, 184, 0.5);
+}
+
+/* パラメータエディタ全体のコンテナ */
+#parameter-editor {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 15px;
+    background-color: #f8f9fa;
+}
+
+.editor-title {
+    margin-top: 0;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1em;
+    color: #495057;
+}
+
+/* 各パラメータのグループ（ラベルと入力欄） */
+.param-group {
+    margin-bottom: 10px;
+}
+.param-group:last-child {
+    margin-bottom: 0; /* 最後の要素の下マージンは不要 */
+}
+
+.param-group label {
+    font-size: 0.85em;
+    color: #555;
+    margin-bottom: 3px;
+}
+
+/* パラメータの入力欄 */
+.param-input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
