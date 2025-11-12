@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>発想標語に対応する演奏見本システム</h1>
+            <h1>楽譜上のフレーズ指定に基づく演奏表情のパラメータ制御システム</h1>
         </header>
 
         <div class="main-content">
@@ -65,7 +65,13 @@
                         <p>終了: <span id="end-note-info">未選択</span></p>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- デバッグ用チェックボックス -->
+                    <div class="control-group debug-control">
+                        <input type="checkbox" id="debug-mode-toggle">
+                        <label for="debug-mode-toggle">スコア表示 (デバッグ)</label>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
                         <button id="reset-selection-btn">選択範囲をリセット</button>
                         
                         <div class="history-controls">

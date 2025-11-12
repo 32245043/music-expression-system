@@ -66,19 +66,20 @@ tasks = {}
 # 表現プリセット（発想標語のみ）
 # ============================================================
 # 演奏表現のプリセットを定義。フロントエンドで選択肢として表示される
+
 PRESET_DEFINITIONS = {
     "tempo_expressions": {
-        "なし": {"params": {"base_cc2": 0, "peak_cc2": 0}, "meaning": ""},
-        "Cantabile": {"params": {"base_cc2": 10, "peak_cc2": 30}, "meaning": "歌うように"},
-        "Dolce": {"params": {"base_cc2": -20, "peak_cc2": -5}, "meaning": "甘く、柔らかく"},
-        "Maestoso": {"params": {"base_cc2": 10, "peak_cc2": 40}, "meaning": "荘厳に、堂々と"},
-        "Appassionato": {"params": {"base_cc2": 10, "peak_cc2": 35, "onset_ms": -10}, "meaning": "情熱的に"},
-        "Con brio": {"params": {"base_cc2": 10, "peak_cc2": 25, "onset_ms": -30}, "meaning": "生き生きと"},
-        "Leggiero": {"params": {"base_cc2": -10, "peak_cc2": 5, "onset_ms": -10}, "meaning": "軽く、軽快に"},
-        "Tranquillo": {"params": {"base_cc2": -20, "peak_cc2": -10, "onset_ms": -20}, "meaning": "静かに、穏やかに"},
-        "Risoluto": {"params": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": -10}, "meaning": "決然と、きっぱりと"},
-        "Sostenuto": {"params": {"base_cc2": 0, "peak_cc2": 10, "onset_ms": 30}, "meaning": "音を十分に保って"},
-        "Marcato": {"params": {"base_cc2": 10, "peak_cc2": 30, "onset_ms": 0}, "meaning": "一つ一つの音をはっきりと"},
+        "なし": {"params": {"base_cc2": 0, "peak_cc2": 0, "onset_ms": 0}, "meaning": ""},
+        "Cantabile": {"params": {"base_cc2": 15, "peak_cc2": 35, "onset_ms": 20}, "meaning": "歌うように"},
+        "Dolce": {"params": {"base_cc2": -25, "peak_cc2": 10, "onset_ms": 10}, "meaning": "甘く、柔らかく"},
+        "Maestoso": {"params": {"base_cc2": 20, "peak_cc2": 50, "onset_ms": 40}, "meaning": "荘厳に、堂々と"},
+        "Appassionato": {"params": {"base_cc2": 25, "peak_cc2": 60, "onset_ms": -30}, "meaning": "情熱的に"},
+        "Con brio": {"params": {"base_cc2": 15, "peak_cc2": 40, "onset_ms": -40}, "meaning": "生き生きと"},
+        "Leggiero": {"params": {"base_cc2": -20, "peak_cc2": 5, "onset_ms": -30}, "meaning": "軽く、軽快に"},
+        "Tranquillo": {"params": {"base_cc2": -35, "peak_cc2": 5, "onset_ms": 30}, "meaning": "静かに、穏やかに"},
+        "Risoluto": {"params": {"base_cc2": 20, "peak_cc2": 45, "onset_ms": 0}, "meaning": "決然と、きっぱりと"},
+        "Sostenuto": {"params": {"base_cc2": 10, "peak_cc2": 20, "onset_ms": 50}, "meaning": "音を十分に保って"},
+        "Marcato": {"params": {"base_cc2": 15, "peak_cc2": 65, "onset_ms": 0}, "meaning": "一つ一つの音をはっきりと"},
     }
 }
 
@@ -435,6 +436,8 @@ def estimate_apex():
         current_event = note_map[i]
         
         if current_event['is_rest']:
+            # 休符にも original_indices_range を追加しておく
+            current_event['original_indices_range'] = (current_event['index'], current_event['index'])
             logical_full_note_map.append(current_event)
             i += 1
             continue
@@ -465,126 +468,164 @@ def estimate_apex():
             i += 1
     
     # =======================================================================================
-    # --- 選択されたフレーズ内の音符リストを抽出 ---
+    # --- 選択されたフレーズ内のイベントリスト（休符も含む）を抽出 ---
     # =======================================================================================
-    logical_phrase_notes = []
-    for logical_note in logical_full_note_map:
-        if logical_note.get('is_rest', False):
-            continue
-            
-        note_start, note_end = logical_note['original_indices_range']
+    logical_phrase_events = []
+    for logical_event in logical_full_note_map:
+        # 休符もリストに残す
+        note_start, note_end = logical_event['original_indices_range']
         phrase_start, phrase_end = true_start_index, true_end_index
         if max(note_start, phrase_start) <= min(note_end, phrase_end):
-            logical_phrase_notes.append(logical_note)
+            logical_phrase_events.append(logical_event)
 
-    if not logical_phrase_notes:
+    # フレーズ内に音符が一つもなければ空のリストを返す
+    if not any(not e.get('is_rest', False) for e in logical_phrase_events):
         return jsonify({'apex_candidates': []})
         
-    # デバッグ用
-    print("\n--- 選択されたフレーズの論理音符リスト ---")
-    for note in logical_phrase_notes:
-        start_orig_idx, end_orig_idx = note['original_indices_range']
-        range_str = f"(covers: {start_orig_idx}-{end_orig_idx})" if start_orig_idx != end_orig_idx else ""
-        
-        print(
-            f"  Index: {note['index']:<4} "
-            f"音名: {midi_to_note_name(note.get('pitch')):<5} "
-            f"音価(beats): {note['duration_beats']:.2f} {range_str}"
-        )
-    print("-------------------------------------\n")
-    
     # =======================================================================================
-    # --- 論文ルールに基づくスコアリング ---
+    # --- 論文ルールに基づくスコアリング（休符を考慮） ---
     # =======================================================================================
 
     # 【ステップ1：前準備】
     # -----------------------------------------------------------------------------------
-    scores = {note['index']: 0 for note in logical_phrase_notes}
+    # 休符抜きのリストもスコア計算の対象として別途作成
+    logical_phrase_notes = [e for e in logical_phrase_events if not e.get('is_rest', False)]
+    scores = {note['index']: {'total': 0, 'reasons': []} for note in logical_phrase_notes}
+    notes_only_indices = {note['index']: i for i, note in enumerate(notes_only_map)}
 
-    # 同じ音価が続く音符をグループ分けする
+    # スコアを加算するためのヘルパー関数
+    def add_score(note_index, points, reason):
+        if note_index in scores:
+            scores[note_index]['total'] += points
+            scores[note_index]['reasons'].append(f"{reason} (+{points})")
+
+    # 同じ音価が続く音符をグループ分けする（休符でグループを区切る）
     duration_groups = []
-    if logical_phrase_notes:
-        current_group = [logical_phrase_notes[0]]
-        for i in range(1, len(logical_phrase_notes)):
-            if logical_phrase_notes[i]['duration_beats'] == current_group[0]['duration_beats']:
-                current_group.append(logical_phrase_notes[i])
+    if logical_phrase_events:
+        current_group = []
+        for event in logical_phrase_events:
+            if event.get('is_rest', False):
+                if current_group:
+                    duration_groups.append(current_group)
+                    current_group = []
+                continue
+
+            if not current_group or event['duration_beats'] == current_group[0]['duration_beats']:
+                current_group.append(event)
             else:
                 duration_groups.append(current_group)
-                current_group = [logical_phrase_notes[i]]
-        duration_groups.append(current_group)
+                current_group = [event]
+        if current_group:
+            duration_groups.append(current_group)
 
     # 【ステップ2：スコア計算】
     # -----------------------------------------------------------------------------------
     # --- ルール適用：音価 ---
     
-    # ルール1. 隣接する2音の比較
-    for i in range(len(logical_phrase_notes) - 1):
-        note = logical_phrase_notes[i]
-        next_note = logical_phrase_notes[i+1]
-        if note['duration_beats'] > next_note['duration_beats']:
-            scores[note['index']] += 1
-        elif note['duration_beats'] < next_note['duration_beats']:
-            scores[next_note['index']] += 1
-            
+    # ルール1. 隣接する2音の比較（休符をスキップ）
+    for i, event in enumerate(logical_phrase_events):
+        if event.get('is_rest', False): continue
+        
+        next_note = None
+        for j in range(i + 1, len(logical_phrase_events)):
+            if not logical_phrase_events[j].get('is_rest', False):
+                next_note = logical_phrase_events[j]
+                break
+        
+        if next_note:
+            if event['duration_beats'] > next_note['duration_beats']:
+                add_score(event['index'], 1, "音価(隣接): 次より長い")
+            elif event['duration_beats'] < next_note['duration_beats']:
+                add_score(next_note['index'], 1, "音価(隣接): 前より長い")
+
     # ルール2. 同一音価が連続する音群
     for group in duration_groups:
         if len(group) > 1:
-            # 第1音に1点加算
-            scores[group[0]['index']] += 1
-            # 第2音以降に「発音順/音符数」を加算
+            add_score(group[0]['index'], 1, "音価(同音価群): 先頭")
             for pos, note_in_group in enumerate(group):
                 if pos > 0:
-                    scores[note_in_group['index']] += (pos + 1) / len(group)
+                    point = (pos + 1) / len(group)
+                    add_score(note_in_group['index'], point, f"音価(同音価群): {pos+1}番目")
 
     # --- ルール適用：音高 ---
     
-    # ルール1. 隣接する2音の比較
-    for i in range(len(logical_phrase_notes) - 1):
-        note = logical_phrase_notes[i]
-        next_note = logical_phrase_notes[i+1]
-        if note['pitch'] > next_note['pitch']:
-            scores[note['index']] += 1
-        elif note['pitch'] < next_note['pitch']:
-            scores[next_note['index']] += 1
-
-    # ルール2. 進行到達音 (4音のパターン)
-    for i in range(1, len(logical_phrase_notes) - 2):
-        n_minus_1, n, n_plus_1, n_plus_2 = logical_phrase_notes[i-1], logical_phrase_notes[i], logical_phrase_notes[i+1], logical_phrase_notes[i+2]
-        p_m1, p_n, p_p1, p_p2 = n_minus_1['pitch'], n['pitch'], n_plus_1['pitch'], n_plus_2['pitch']
+    # ルール1. 隣接する2音の比較（休符をスキップ）
+    for i, event in enumerate(logical_phrase_events):
+        if event.get('is_rest', False): continue
         
-        dir1 = 1 if p_n > p_m1 else -1 if p_n < p_m1 else 0
-        dir2 = 1 if p_p1 > p_n else -1 if p_p1 < p_n else 0
-        dir3 = 1 if p_p2 > p_p1 else -1 if p_p2 < p_p1 else 0
+        next_note = None
+        for j in range(i + 1, len(logical_phrase_events)):
+            if not logical_phrase_events[j].get('is_rest', False):
+                next_note = logical_phrase_events[j]
+                break
+
+        if next_note:
+            if event['pitch'] > next_note['pitch']:
+                add_score(event['index'], 1, "音高(隣接): 次より高い")
+            elif event['pitch'] < next_note['pitch']:
+                add_score(next_note['index'], 1, "音高(隣接): 前より高い")
+
+    # ルール2. 進行到達音 (休符を挟まない4音のパターン)
+    for i in range(len(logical_phrase_notes) - 3):
+        n1, n2, n3, n4 = logical_phrase_notes[i], logical_phrase_notes[i+1], logical_phrase_notes[i+2], logical_phrase_notes[i+3]
+
+        if not (n2['original_indices_range'][0] == n1['original_indices_range'][1] + 1 and
+                n3['original_indices_range'][0] == n2['original_indices_range'][1] + 1 and
+                n4['original_indices_range'][0] == n3['original_indices_range'][1] + 1):
+            continue
+
+        p1, p2, p3, p4 = n1['pitch'], n2['pitch'], n3['pitch'], n4['pitch']
+        dir1 = 1 if p2 > p1 else -1 if p2 < p1 else 0
+        dir2 = 1 if p3 > p2 else -1 if p3 < p2 else 0
+        dir3 = 1 if p4 > p3 else -1 if p4 < p3 else 0
         pattern = 0
         
-        # 1) 上行-上行-下行
         if dir1 >= 0 and dir2 > 0 and dir3 < 0: 
-            scores[n_plus_1['index']] += 1
+            add_score(n3['index'], 1, "音高(パターン1)")
             pattern = 1
-        # 2) 下行-上行-下行
         elif dir1 < 0 and dir2 > 0 and dir3 < 0: 
-            scores[n['index']] += 2
-            scores[n_plus_1['index']] += 1
+            add_score(n2['index'], 2, "音高(パターン2)")
+            add_score(n3['index'], 1, "音高(パターン2)")
             pattern = 2
-        # 3) 上行-下行-上行
         elif dir1 >= 0 and dir2 < 0 and dir3 > 0: 
-            scores[n['index']] += 1
-            scores[n_plus_1['index']] += 2
-            scores[n_plus_2['index']] += 1
-        # 4) 下行-下行-上行
+            add_score(n2['index'], 1, "音高(パターン3)")
+            add_score(n3['index'], 2, "音高(パターン3)")
+            add_score(n4['index'], 1, "音高(パターン3)")
         elif dir1 < 0 and dir2 < 0 and dir3 > 0: 
-            scores[n_plus_1['index']] += 2
-            scores[n_plus_2['index']] += 1
+            add_score(n3['index'], 2, "音高(パターン4)")
+            add_score(n4['index'], 1, "音高(パターン4)")
         
-        # 5) 追加ルール
-        if (pattern in [1, 2]) and n_plus_1['duration_seconds'] < 0.25:
-            scores[n_minus_1['index']] += 1
+        if (pattern in [1, 2]) and n3['duration_seconds'] < 0.25:
+            add_score(n1['index'], 1, "音高(追加ルール)")
 
     # 【ステップ3：結果の集計】
     # -----------------------------------------------------------------------------------
-    max_score = max(scores.values()) if scores else 0
-    candidates = [index for index, score in scores.items() if score == max_score and max_score > 0]
+    # デバッグ用にスコア詳細をまとめる
+    score_details = []
+    for index, data in scores.items():
+        note = next((n for n in logical_phrase_notes if n['index'] == index), None)
+        if note:
+            details = {
+                'note_name': midi_to_note_name(note.get('pitch')),
+                'total_score': round(data['total'], 2),
+                'reasons': data['reasons'],
+                'fe_index': notes_only_indices.get(index) 
+            }
+            score_details.append(details)
+    score_details.sort(key=lambda x: x['total_score'], reverse=True)
+
+    # サーバーのコンソールにデバッグ情報を出力
+    print("--- Apex Estimation Debug Info (Rest-aware) ---")
+    for detail in score_details:
+        # fe_index が None でないことを確認してから出力
+        fe_index_str = detail.get('fe_index', 'N/A')
+        print(f"  Note(fe_idx:{fe_index_str}, {detail['note_name']}) - Score: {detail['total_score']}, Reasons: {detail['reasons']}")
+    print("----------------------------------")
+
+    max_score = max(d['total'] for d in scores.values()) if scores else 0
+    candidates = [index for index, data in scores.items() if data['total'] == max_score and max_score > 0]
     
+    # 候補がタイの開始音符だった場合、タイで繋がっている音符すべてを候補に含める
     expanded_candidates = []
     for index in candidates:
         expanded_candidates.append(index)
@@ -605,10 +646,12 @@ def estimate_apex():
     final_candidates = sorted(list(set(expanded_candidates)))
     
     # 候補のインデックスも休符抜きにして返す
-    notes_only_indices = {note['index']: i for i, note in enumerate(notes_only_map)}
     fe_candidates = [notes_only_indices[i] for i in final_candidates if i in notes_only_indices]
     
-    return jsonify({'apex_candidates': fe_candidates})
+    return jsonify({
+        'apex_candidates': fe_candidates,
+        'debug_scores': score_details
+    })
 
 
 @app.route('/generate_audio', methods=['POST'])

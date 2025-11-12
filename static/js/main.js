@@ -29,6 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const paramBaseCc2 = document.getElementById("param-base-cc2");
     const paramPeakCc2 = document.getElementById("param-peak-cc2");
     const paramOnsetMs = document.getElementById("param-onset-ms");
+    // ▼▼▼ 変更点 ▼▼▼
+    const debugModeToggle = document.getElementById("debug-mode-toggle");
 
 
     // --- グローバル変数 ---
@@ -49,6 +51,46 @@ document.addEventListener("DOMContentLoaded", () => {
     function clearApexCandidatesHighlights() {
         document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
     }
+
+    // ▼▼▼ 変更点：ここから2つの関数を追加 ▼▼▼
+
+    /**
+     * 楽譜上に表示されているデバッグ用のスコアをすべて消去する
+     */
+    function clearDebugScores() {
+        document.querySelectorAll('.debug-score-text').forEach(el => el.remove());
+    }
+
+    /**
+     * サーバーから受け取ったスコア情報を楽譜上に描画する
+     * @param {Array} scores - スコア情報の配列
+     */
+    function drawDebugScores(scores) {
+        const scoreSVG = scoreDisplay.querySelector("svg");
+        if (!scoreSVG) return;
+        const svgRect = scoreSVG.getBoundingClientRect();
+        const allNoteElements = Array.from(document.querySelectorAll(".abcjs-note"));
+
+        scores.forEach(scoreInfo => {
+            // fe_index を使って、対応する音符DOM要素を取得
+            const noteEl = allNoteElements[scoreInfo.fe_index];
+            if (noteEl) {
+                const noteRect = noteEl.getBoundingClientRect();
+                const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                
+                // 音符の真ん中上部にテキストを配置
+                textEl.setAttribute("x", noteRect.left - svgRect.left + (noteRect.width / 2));
+                textEl.setAttribute("y", noteRect.top - svgRect.top - 5); // 5px上に表示
+                textEl.setAttribute("text-anchor", "middle"); // 中央揃え
+                textEl.classList.add('debug-score-text'); // CSSと削除用にクラスを付与
+                textEl.textContent = scoreInfo.total_score; // 表示するスコア
+
+                scoreSVG.appendChild(textEl);
+            }
+        });
+    }
+
+    // ▲▲▲ ここまで ▲▲▲
 
     /**
      * 楽譜上に適用されたフレーズの装飾（ハイライトやテキスト）を再描画する
@@ -259,6 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // 開始音符選択時は、まず選択状態をリセット
         if (currentMode === 'start') {
             clearApexCandidatesHighlights();
+            // ▼▼▼ 変更点 ▼▼▼
+            clearDebugScores();
             selectedNotes = { start: null, end: null, peak: null };
         }
         
@@ -290,6 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchApexCandidates() {
         statusMessage.textContent = '⏳ 頂点候補を推定中...';
         clearApexCandidatesHighlights();
+        clearDebugScores(); // ▼▼▼ 変更点 ▼▼▼
 
         const { start, end } = selectedNotes;
         if (!start || !end) return;
@@ -314,6 +359,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     noteElements[index].classList.add('apex-candidate');
                 }
             });
+            
+            // ▼▼▼ 変更点 ▼▼▼
+            // デバッグモードがONならスコアを描画
+            if (debugModeToggle.checked && result.debug_scores) {
+                drawDebugScores(result.debug_scores);
+            }
+
             statusMessage.textContent = '✅ 黄色の頂点候補から1つ選択してください';
         } catch (err) {
             statusMessage.textContent = `⚠️ 頂点推定エラー: ${err.message}`;
@@ -348,6 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
         selectionMode = "start";
         selectedNotes = { start: null, end: null, peak: null };
         clearApexCandidatesHighlights();
+        clearDebugScores(); // ▼▼▼ 変更点 ▼▼▼
         updateSelectionUI();
         statusMessage.textContent = "選択をリセットしました。";
     });

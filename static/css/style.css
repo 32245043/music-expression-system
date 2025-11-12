@@ -367,3 +367,29 @@ g.abcjs-note.selected-peak path {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+/* ============================================= */
+/* デバッグ用スタイル */
+/* ============================================= */
+.debug-control {
+    font-size: 0.9em;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.debug-control label {
+    margin-bottom: 0;
+    font-weight: normal;
+}
+
+.debug-score-text {
+    font-size: 10px;
+    font-weight: normal;
+    fill: #007bff; /* 文字の色を青に */
+    pointer-events: none; /* テキストがクリックの邪魔をしないように */
+}
