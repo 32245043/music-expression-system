@@ -1,3 +1,4 @@
 *.sf2 filter=lfs diff=lfs merge=lfs -text
 fluidsynth/*.exe filter=lfs diff=lfs merge=lfs -text
 fluidsynth/*.dll filter=lfs diff=lfs merge=lfs -text
+/.venv export-ignore
