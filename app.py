@@ -12,6 +12,7 @@ import copy
 import threading
 import uuid
 from collections import defaultdict
+import math
 
 # ============================================================
 # アプリケーション設定
@@ -387,8 +388,6 @@ def upload_files():
         app.logger.exception("Upload error")
         return jsonify({'error': f'アップロードエラー: {e}'}), 500
 
-# ★★★ ここからが修正箇所 ★★★
-
 def midi_to_note_name(midi_number):
     """MIDIノート番号を 'C4' のような音名表記に変換するヘルパー関数"""
     if midi_number is None:
@@ -490,11 +489,23 @@ def estimate_apex():
     # -----------------------------------------------------------------------------------
     # 休符抜きのリストもスコア計算の対象として別途作成
     logical_phrase_notes = [e for e in logical_phrase_events if not e.get('is_rest', False)]
+
+    # スコア計算から除外する開始音と終了音のインデックスを取得
+    start_note_index = -1
+    end_note_index = -1
+    if len(logical_phrase_notes) > 0:
+        start_note_index = logical_phrase_notes[0]['index']
+        end_note_index = logical_phrase_notes[-1]['index']
+
+    # スコア辞書は全ての音符で初期化（add_scoreでフィルタリングするため）
     scores = {note['index']: {'total': 0, 'reasons': []} for note in logical_phrase_notes}
     notes_only_indices = {note['index']: i for i, note in enumerate(notes_only_map)}
 
     # スコアを加算するためのヘルパー関数
     def add_score(note_index, points, reason):
+        # 開始音と終了音はスコア計算から除外する
+        if note_index == start_note_index or note_index == end_note_index:
+            return
         if note_index in scores:
             scores[note_index]['total'] += points
             scores[note_index]['reasons'].append(f"{reason} (+{points})")
@@ -510,7 +521,8 @@ def estimate_apex():
                     current_group = []
                 continue
 
-            if not current_group or event['duration_beats'] == current_group[0]['duration_beats']:
+            # math.iscloseで浮動小数点数を比較
+            if not current_group or math.isclose(event['duration_beats'], current_group[0]['duration_beats']):
                 current_group.append(event)
             else:
                 duration_groups.append(current_group)
@@ -520,9 +532,7 @@ def estimate_apex():
 
     # 【ステップ2：スコア計算】
     # -----------------------------------------------------------------------------------
-    # --- ルール適用：音価 ---
-    
-    # ルール1. 隣接する2音の比較（休符をスキップ）
+    # --- ルール適用：隣接する2音の比較（音価と音高をまとめて処理） ---
     for i, event in enumerate(logical_phrase_events):
         if event.get('is_rest', False): continue
         
@@ -533,42 +543,38 @@ def estimate_apex():
                 break
         
         if next_note:
-            if event['duration_beats'] > next_note['duration_beats']:
-                add_score(event['index'], 1, "音価(隣接): 次より長い")
-            elif event['duration_beats'] < next_note['duration_beats']:
-                add_score(next_note['index'], 1, "音価(隣接): 前より長い")
+            # --- 音価の比較 ---
+            if not math.isclose(event['duration_beats'], next_note['duration_beats']):
+                if event['duration_beats'] > next_note['duration_beats']:
+                    add_score(event['index'], 1, "音価(隣接): 後続音より長い")
+                else:
+                    add_score(next_note['index'], 1, "音価(隣接): 後続音より短い")
 
-    # ルール2. 同一音価が連続する音群
+            # --- 音高の比較 ---
+            if event['pitch'] > next_note['pitch']:
+                add_score(event['index'], 1, "音高(隣接): 後続音より高い")
+            elif event['pitch'] < next_note['pitch']:
+                add_score(next_note['index'], 1, "音高(隣接): 後続音より低い")
+
+    # --- ルール適用：同一音価が連続する音群 ---
+    # ルール(音価): 同一音価が連続する音群の第1音
     for group in duration_groups:
         if len(group) > 1:
-            add_score(group[0]['index'], 1, "音価(同音価群): 先頭")
+            add_score(group[0]['index'], 1, "音価(同音価群): 第1音")
+
+    # ルール(音高): 同一音価が連続する音群の第2音以降
+    for group in duration_groups:
+        if len(group) > 1:
             for pos, note_in_group in enumerate(group):
-                if pos > 0:
+                if pos > 0: # 第2音以降が対象
                     point = (pos + 1) / len(group)
-                    add_score(note_in_group['index'], point, f"音価(同音価群): {pos+1}番目")
+                    add_score(note_in_group['index'], point, f"音高(同音価群): {pos+1}番目")
 
-    # --- ルール適用：音高 ---
-    
-    # ルール1. 隣接する2音の比較（休符をスキップ）
-    for i, event in enumerate(logical_phrase_events):
-        if event.get('is_rest', False): continue
-        
-        next_note = None
-        for j in range(i + 1, len(logical_phrase_events)):
-            if not logical_phrase_events[j].get('is_rest', False):
-                next_note = logical_phrase_events[j]
-                break
-
-        if next_note:
-            if event['pitch'] > next_note['pitch']:
-                add_score(event['index'], 1, "音高(隣接): 次より高い")
-            elif event['pitch'] < next_note['pitch']:
-                add_score(next_note['index'], 1, "音高(隣接): 前より高い")
-
-    # ルール2. 進行到達音 (休符を挟まない4音のパターン)
+    # ルール3. 進行到達音 (休符を挟まない4音のパターン)
     for i in range(len(logical_phrase_notes) - 3):
-        n1, n2, n3, n4 = logical_phrase_notes[i], logical_phrase_notes[i+1], logical_phrase_notes[i+2], logical_phrase_notes[i+3]
+        n1, n2, n3, n4 = logical_phrase_notes[i:i+4]
 
+        # 物理的に連続しているかチェック
         if not (n2['original_indices_range'][0] == n1['original_indices_range'][1] + 1 and
                 n3['original_indices_range'][0] == n2['original_indices_range'][1] + 1 and
                 n4['original_indices_range'][0] == n3['original_indices_range'][1] + 1):
@@ -578,25 +584,40 @@ def estimate_apex():
         dir1 = 1 if p2 > p1 else -1 if p2 < p1 else 0
         dir2 = 1 if p3 > p2 else -1 if p3 < p2 else 0
         dir3 = 1 if p4 > p3 else -1 if p4 < p3 else 0
-        pattern = 0
         
-        if dir1 >= 0 and dir2 > 0 and dir3 < 0: 
-            add_score(n3['index'], 1, "音高(パターン1)")
-            pattern = 1
-        elif dir1 < 0 and dir2 > 0 and dir3 < 0: 
-            add_score(n2['index'], 2, "音高(パターン2)")
-            add_score(n3['index'], 1, "音高(パターン2)")
-            pattern = 2
-        elif dir1 >= 0 and dir2 < 0 and dir3 > 0: 
+        # 1)上行-上行-下行
+        if dir1 >= 0 and dir2 > 0 and dir3 < 0:
+            # 5)のルール: n3の音長が短い場合
+            if n3['duration_seconds'] < 0.25:
+                # 先行音(n2)に1点
+                add_score(n2['index'], 1, "音高(パターン5)")
+            else:
+                # 通常ルール: 対象音(n3)に1点
+                add_score(n3['index'], 1, "音高(パターン1)")
+        
+        # 2)下行-上行-下行
+        elif dir1 < 0 and dir2 > 0 and dir3 < 0:
+            # 5)のルール: n3の音長が短い場合
+            if n3['duration_seconds'] < 0.25:
+                # 先行音(n2)に1点
+                add_score(n2['index'], 1, "音高(パターン5)")
+            else:
+                # 通常ルール: 先行音(n2)に2点, 対象音(n3)に1点
+                add_score(n2['index'], 2, "音高(パターン2)")
+                add_score(n3['index'], 1, "音高(パターン2)")
+        
+        # 3)上行-下行-上行
+        elif dir1 >= 0 and dir2 < 0 and dir3 > 0:
+            # ルール: 先行音(n2):1, 対象音(n3):2, 後続音(n4):1
             add_score(n2['index'], 1, "音高(パターン3)")
             add_score(n3['index'], 2, "音高(パターン3)")
             add_score(n4['index'], 1, "音高(パターン3)")
-        elif dir1 < 0 and dir2 < 0 and dir3 > 0: 
+        
+        # 4)下行-下行-上行
+        elif dir1 < 0 and dir2 < 0 and dir3 > 0:
+            # ルール: 対象音(n3):2, 後続音(n4):1
             add_score(n3['index'], 2, "音高(パターン4)")
             add_score(n4['index'], 1, "音高(パターン4)")
-        
-        if (pattern in [1, 2]) and n3['duration_seconds'] < 0.25:
-            add_score(n1['index'], 1, "音高(追加ルール)")
 
     # 【ステップ3：結果の集計】
     # -----------------------------------------------------------------------------------
@@ -619,11 +640,15 @@ def estimate_apex():
     for detail in score_details:
         # fe_index が None でないことを確認してから出力
         fe_index_str = detail.get('fe_index', 'N/A')
-        print(f"  Note(fe_idx:{fe_index_str}, {detail['note_name']}) - Score: {detail['total_score']}, Reasons: {detail['reasons']}")
+        # 開始・終了音はスコア詳細からも除外する
+        if fe_index_str != fe_start_index and fe_index_str != fe_end_index:
+            print(f"  Note(fe_idx:{fe_index_str}, {detail['note_name']}) - Score: {detail['total_score']}, Reasons: {detail['reasons']}")
     print("----------------------------------")
 
-    max_score = max(d['total'] for d in scores.values()) if scores else 0
-    candidates = [index for index, data in scores.items() if data['total'] == max_score and max_score > 0]
+    # 開始と終了を除いたスコアで最大値を探す
+    internal_scores = {k: v for k, v in scores.items() if k != start_note_index and k != end_note_index}
+    max_score = max(d['total'] for d in internal_scores.values()) if internal_scores else 0
+    candidates = [index for index, data in internal_scores.items() if data['total'] == max_score and max_score > 0]
     
     # 候補がタイの開始音符だった場合、タイで繋がっている音符すべてを候補に含める
     expanded_candidates = []

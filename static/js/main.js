@@ -52,8 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".abcjs-note.apex-candidate").forEach(el => el.classList.remove("apex-candidate"));
     }
 
-    // ▼▼▼ 変更点：ここから2つの関数を追加 ▼▼▼
-
     /**
      * 楽譜上に表示されているデバッグ用のスコアをすべて消去する
      */
@@ -90,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ▲▲▲ ここまで ▲▲▲
 
     /**
      * 楽譜上に適用されたフレーズの装飾（ハイライトやテキスト）を再描画する
@@ -231,6 +228,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 partSelector.appendChild(opt);
             });
             partSelector.disabled = false;
+
+            if (result.parts.length == 1) {
+                partSelector.dispatchEvent(new Event('change')); 
+            }
 
             // 各種状態を初期化
             history = [];
