@@ -229,10 +229,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             partSelector.disabled = false;
 
-            if (result.parts.length == 1) {
+            if (result.parts.length > 0) {
                 partSelector.dispatchEvent(new Event('change')); 
             }
-
+1
             // 各種状態を初期化
             history = [];
             redoStack = [];
