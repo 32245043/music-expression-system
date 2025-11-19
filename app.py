@@ -532,6 +532,45 @@ def estimate_apex():
 
     # 【ステップ2：スコア計算】
     # -----------------------------------------------------------------------------------
+    # --- [新規追加] グループ全体に関するルール ---
+    if len(logical_phrase_notes) > 1:
+        # ルール(グループ): 最高音
+        # フレーズ内の最高ピッチを探す
+        max_pitch = -1
+        for note in logical_phrase_notes:
+            if note['pitch'] > max_pitch:
+                max_pitch = note['pitch']
+        # 最高ピッチを持つすべての音符にスコアを加算
+        highest_notes = [note for note in logical_phrase_notes if note['pitch'] == max_pitch]
+        for note in highest_notes:
+            # 最高音は非常に強力な要素なので、高めのポイント(e.g., 2)を与える
+            add_score(note['index'], 2, "グループ: 最高音")
+
+        # ルール(グループ): 最大の上行跳躍
+        max_leap = 0
+        target_note_indices_for_leap = []
+        # 音符リストをループして最大の跳躍を探す
+        for i in range(1, len(logical_phrase_notes)):
+            prev_note = logical_phrase_notes[i-1]
+            current_note = logical_phrase_notes[i]
+            
+            # 上行跳躍のみを計算
+            leap = current_note['pitch'] - prev_note['pitch']
+            
+            if leap > max_leap:
+                max_leap = leap
+                # 新しい最大値が見つかったので、候補リストをリセット
+                target_note_indices_for_leap = [current_note['index']]
+            elif leap == max_leap and max_leap > 0:
+                # 同じ大きさの最大跳躍が見つかった場合、候補に追加
+                target_note_indices_for_leap.append(current_note['index'])
+        
+        # 最大の上行跳躍の到達点にスコアを加算
+        for note_index in target_note_indices_for_leap:
+            # 大きな跳躍もクライマックスを示す強力な要素なので、高めのポイント(e.g., 2)を与える
+            add_score(note_index, 2, f"グループ: 最大の上行跳躍 (幅:{max_leap})")
+
+
     # --- ルール適用：隣接する2音の比較（音価と音高をまとめて処理） ---
     for i, event in enumerate(logical_phrase_events):
         if event.get('is_rest', False): continue
